@@ -8,7 +8,7 @@ import { PARSE_ACCEPT, type UploadedFile } from "@/lib/files";
 import { DEFAULT_OPTIONS, jobHref, type ParseOptions } from "@/lib/parse";
 import { postJson } from "@/lib/request";
 import { uploadFile } from "@/lib/upload";
-import { OptionsPanel } from "./options";
+import { OptionsForm } from "./options";
 
 interface Picked {
   file: File;
@@ -16,7 +16,7 @@ interface Picked {
   error?: string;
 }
 
-/** Drop a document and it parses at once, with the options below the card */
+/** Set the options, then drop a document and it parses at once */
 export function ParseStart() {
   const router = useRouter();
   const [picked, setPicked] = useState<Picked | null>(null);
@@ -48,13 +48,20 @@ export function ParseStart() {
       <PageHeader title="Parse" />
       <StartLayout
         title="What should we parse?"
-        description="Drop a document to see every element the parser finds, boxed on its page. Each result is a link you can share."
+        description="Pick the options, then drop a document to see every element the parser finds, boxed on its page."
       >
         <DropCard
           accept={PARSE_ACCEPT}
           hint="PDF, Word, slides or an image"
           disabled={!!picked && !picked.error}
           onFiles={([file]) => file && void parse(file)}
+          footer={
+            <OptionsForm
+              options={options}
+              onChange={setOptions}
+              disabled={!!picked && !picked.error}
+            />
+          }
         >
           {picked && (
             <FileRow
@@ -67,11 +74,6 @@ export function ParseStart() {
             />
           )}
         </DropCard>
-        <OptionsPanel
-          options={options}
-          onChange={setOptions}
-          disabled={!!picked && !picked.error}
-        />
       </StartLayout>
     </>
   );

@@ -1,18 +1,18 @@
 "use client";
 
+import { Menu } from "@base-ui/react/menu";
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { cn } from "cn";
-import { ChevronDownIcon } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { CheckIcon, ChevronDownIcon } from "lucide-react";
+import type { CSSProperties } from "react";
 import {
   FOCUS,
-  Reveal,
-  SEGMENT,
+  POPUP,
+  POPUP_ITEM,
   SEGMENT_PRESSED,
   SEGMENT_TRACK,
 } from "@/components/controls";
-import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DEFAULT_OPTIONS,
   ELEMENT_TYPES,
@@ -22,69 +22,36 @@ import {
   typeColor,
 } from "@/lib/parse";
 
-const MODE_NOTES: Record<ParseOptions["mode"], string> = {
-  high_quality: "Reads each element with the full parsing model.",
-  fast: "Reads each element with a lighter model, for quicker results.",
-};
+const LABEL = "text-[13px] text-muted-foreground";
 
-const FORMAT_NOTES: Record<ParseOptions["return_format"], string> = {
-  markdown: "Headings, lists, tables and math as Markdown.",
-  html: "Tables and structure as HTML.",
-  plain: "Text only, without formatting.",
-};
-
-function Field({
-  label,
-  note,
-  aside,
-  children,
-}: {
-  label: string;
-  note?: string;
-  aside?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex h-5 items-center justify-between">
-        <span className="text-[13px] font-medium">{label}</span>
-        {aside}
-      </div>
-      {children}
-      {note && (
-        <p
-          key={note}
-          className="text-xs text-muted-foreground motion-safe:animate-swap-in"
-        >
-          {note}
-        </p>
-      )}
-    </div>
-  );
-}
+/** A segment that fits three to a phone's row */
+const SEGMENT = cn(
+  "flex h-full min-w-0 flex-1 items-center justify-center rounded-full px-2 text-[13px] font-medium whitespace-nowrap text-muted-foreground transition-[color] hover:text-foreground disabled:pointer-events-none",
+  SEGMENT_PRESSED,
+  FOCUS
+);
 
 /** One choice of several, held when pressed again rather than cleared */
 function Segmented<Value extends string>({
+  label,
   value,
   items,
   onChange,
 }: {
+  label: string;
   value: Value;
   items: { value: Value; label: string }[];
   onChange: (value: Value) => void;
 }) {
   return (
     <ToggleGroup
+      aria-label={label}
       value={[value]}
       onValueChange={([next]) => next && onChange(next)}
       className={cn(SEGMENT_TRACK, "flex h-8 w-full")}
     >
       {items.map((item) => (
-        <Toggle
-          key={item.value}
-          value={item.value}
-          className={cn(SEGMENT, SEGMENT_PRESSED, "h-full py-0")}
-        >
+        <Toggle key={item.value} value={item.value} className={SEGMENT}>
           {item.label}
         </Toggle>
       ))}
@@ -92,128 +59,125 @@ function Segmented<Value extends string>({
   );
 }
 
-/** The parse job's options, each named and explained */
-export function OptionsForm({
-  options,
+/** Which element types to keep, picked from a menu so the row stays one line */
+function ElementsMenu({
+  types,
   onChange,
 }: {
-  options: ParseOptions;
-  onChange: (options: ParseOptions) => void;
+  types: ParseOptions["element_types"];
+  onChange: (types: ParseOptions["element_types"]) => void;
 }) {
-  const types = options.element_types;
   const all = types.length === ELEMENT_TYPES.length;
 
   return (
-    <div className="flex flex-col gap-5">
-      <Field label="Mode" note={MODE_NOTES[options.mode]}>
-        <Segmented
-          value={options.mode}
-          items={MODES}
-          onChange={(mode) => onChange({ ...options, mode })}
-        />
-      </Field>
-      <Field label="Format" note={FORMAT_NOTES[options.return_format]}>
-        <Segmented
-          value={options.return_format}
-          items={FORMATS}
-          onChange={(format) => onChange({ ...options, return_format: format })}
-        />
-      </Field>
-      <Field
-        label="Elements"
-        aside={
-          <button
-            type="button"
-            disabled={all}
-            onClick={() =>
-              onChange({
-                ...options,
-                element_types: DEFAULT_OPTIONS.element_types,
-              })
-            }
-            className={cn(
-              "rounded-sm text-xs text-muted-foreground transition-[color,opacity] hover:text-foreground disabled:opacity-0",
-              FOCUS
-            )}
-          >
-            Select all
-          </button>
-        }
-      >
-        <ToggleGroup
-          multiple
-          value={types}
-          onValueChange={(value) =>
-            value.length > 0 && onChange({ ...options, element_types: value })
-          }
-          className="flex flex-wrap gap-1.5"
-        >
-          {ELEMENT_TYPES.map(({ type, label }) => (
-            <Toggle
-              key={type}
-              value={type}
-              style={{ "--c": typeColor(type) } as CSSProperties}
-              className={cn(
-                "flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs text-muted-foreground/80 ring-1 ring-soft transition-[background-color,color,box-shadow] duration-150 hover:text-foreground data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-raised dark:data-pressed:bg-muted",
-                FOCUS
-              )}
-            >
-              <span className="size-2 rounded-[2px] bg-(--c) opacity-30 transition-opacity in-data-pressed:opacity-100" />
-              {label}
-            </Toggle>
-          ))}
-        </ToggleGroup>
-      </Field>
-    </div>
-  );
-}
-
-export function summaryOf(options: ParseOptions): string {
-  const mode = MODES.find(({ value }) => value === options.mode)?.label;
-  const format = FORMATS.find(
-    ({ value }) => value === options.return_format
-  )?.label;
-  const count = options.element_types.length;
-  const elements =
-    count === ELEMENT_TYPES.length ? "All elements" : `${count} element types`;
-  return `${mode} · ${format} · ${elements}`;
-}
-
-/** What a parse will use, in a line that opens to change it */
-export function OptionsPanel({
-  options,
-  onChange,
-  disabled,
-}: {
-  options: ParseOptions;
-  onChange: (options: ParseOptions) => void;
-  disabled: boolean;
-}) {
-  return (
-    <Collapsible disabled={disabled} className="flex flex-col items-center">
-      <CollapsibleTrigger
+    <Menu.Root>
+      <Menu.Trigger
+        aria-label="Elements"
         className={cn(
-          "group flex h-8 max-w-full items-center gap-1.5 rounded-full px-3 text-[13px] text-muted-foreground transition-[color,background-color] duration-150 hover:bg-soft hover:text-foreground disabled:pointer-events-none disabled:opacity-50 data-panel-open:text-foreground",
+          SEGMENT_TRACK,
+          "flex h-8 w-full items-center gap-2 px-3 text-left text-[13px] font-medium transition-[background-color] hover:bg-muted disabled:pointer-events-none data-popup-open:bg-muted",
           FOCUS
         )}
       >
-        <span className="shrink-0">Options</span>
-        <span aria-hidden="true" className="text-muted-foreground/60">
-          ·
+        <span className="flex -space-x-0.5" aria-hidden="true">
+          {types.slice(0, 6).map((type) => (
+            <span
+              key={type}
+              className="size-2 rounded-[2px] bg-(--c) ring-1 ring-card"
+              style={{ "--c": typeColor(type) } as CSSProperties}
+            />
+          ))}
         </span>
-        <span className="truncate text-muted-foreground">
-          {summaryOf(options)}
+        <span className="min-w-0 flex-1 truncate">
+          {all
+            ? "All types"
+            : `${types.length} of ${ELEMENT_TYPES.length} types`}
         </span>
-        <ChevronDownIcon className="size-3.5 shrink-0 opacity-60 transition-[rotate] duration-250 ease-smooth group-data-panel-open:rotate-180" />
-      </CollapsibleTrigger>
-      <div className="w-full">
-        <Reveal>
-          {/* A border, not a ring: the fold clips anything drawn outside the box */}
-          <div className="mt-2 rounded-2xl border border-soft bg-card p-4">
-            <OptionsForm options={options} onChange={onChange} />
-          </div>
-        </Reveal>
-      </div>
-    </Collapsible>
+        <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner align="end" sideOffset={6} className="z-50">
+          <Menu.Popup className={cn(POPUP, "w-56")}>
+            {ELEMENT_TYPES.map(({ type, label }) => (
+              <Menu.CheckboxItem
+                key={type}
+                closeOnClick={false}
+                checked={types.includes(type)}
+                disabled={types.length === 1 && types.includes(type)}
+                onCheckedChange={(checked) =>
+                  onChange(
+                    checked
+                      ? DEFAULT_OPTIONS.element_types.filter(
+                          (entry) => entry === type || types.includes(entry)
+                        )
+                      : types.filter((entry) => entry !== type)
+                  )
+                }
+                style={{ "--c": typeColor(type) } as CSSProperties}
+                className={cn(POPUP_ITEM, "data-disabled:opacity-60")}
+              >
+                <span className="flex size-3.5 items-center justify-center">
+                  <Menu.CheckboxItemIndicator>
+                    <CheckIcon className="size-3.5" />
+                  </Menu.CheckboxItemIndicator>
+                </span>
+                <span className="size-2 rounded-[2px] bg-(--c)" />
+                {label}
+              </Menu.CheckboxItem>
+            ))}
+            {!all && (
+              <>
+                <Menu.Separator className="mx-2 my-1 h-px bg-soft" />
+                <Menu.Item
+                  onClick={() => onChange(DEFAULT_OPTIONS.element_types)}
+                  className={POPUP_ITEM}
+                >
+                  <span className="size-3.5" />
+                  Select all
+                </Menu.Item>
+              </>
+            )}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+/** The parse job's options as labeled rows, set before a file goes up */
+export function OptionsForm({
+  options,
+  onChange,
+  disabled = false,
+}: {
+  options: ParseOptions;
+  onChange: (options: ParseOptions) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <fieldset
+      disabled={disabled}
+      className="grid min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 transition-opacity disabled:opacity-60 sm:grid-cols-[4.5rem_minmax(0,1fr)]"
+    >
+      <span className={LABEL}>Mode</span>
+      <Segmented
+        label="Mode"
+        value={options.mode}
+        items={MODES}
+        onChange={(mode) => onChange({ ...options, mode })}
+      />
+      <span className={LABEL}>Format</span>
+      <Segmented
+        label="Format"
+        value={options.return_format}
+        items={FORMATS}
+        onChange={(format) => onChange({ ...options, return_format: format })}
+      />
+      <span className={LABEL}>Elements</span>
+      <ElementsMenu
+        types={options.element_types}
+        onChange={(types) => onChange({ ...options, element_types: types })}
+      />
+    </fieldset>
   );
 }

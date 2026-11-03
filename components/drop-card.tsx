@@ -17,6 +17,7 @@ export function DropCard({
   hint,
   disabled = false,
   onFiles,
+  footer,
   children,
 }: {
   accept: string;
@@ -25,6 +26,8 @@ export function DropCard({
   hint: string;
   disabled?: boolean;
   onFiles: (files: File[]) => void;
+  /** Under the files, set apart: what applies to them, such as options */
+  footer?: ReactNode;
   children?: ReactNode;
 }) {
   const id = useId();
@@ -100,6 +103,9 @@ export function DropCard({
             </li>
           )}
         </ul>
+      )}
+      {footer && (
+        <div className="mt-2 border-t border-soft px-2 pt-3 pb-1">{footer}</div>
       )}
     </div>
   );
