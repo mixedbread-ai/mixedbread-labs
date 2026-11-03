@@ -6,7 +6,7 @@ import { ArrowDownIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
-export type ConversationProps = ComponentProps<typeof StickToBottom> & {
+type ConversationProps = ComponentProps<typeof StickToBottom> & {
   children: React.ReactNode;
   messages: UIMessage[];
   isStreaming: boolean;
@@ -25,9 +25,7 @@ export const Conversation = ({
   );
 };
 
-export type ConversationContentProps = ComponentProps<
-  typeof StickToBottom.Content
->;
+type ConversationContentProps = ComponentProps<typeof StickToBottom.Content>;
 
 export const ConversationContent = ({
   className,

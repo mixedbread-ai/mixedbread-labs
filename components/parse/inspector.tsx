@@ -2,11 +2,10 @@
 
 import { Menu } from "@base-ui/react/menu";
 import { Tabs } from "@base-ui/react/tabs";
-import { Toggle } from "@base-ui/react/toggle";
-import { ToggleGroup } from "@base-ui/react/toggle-group";
 import type {
   DocumentParserResult,
   ElementType,
+  ReturnFormat,
 } from "@mixedbread/sdk/resources/parsing/jobs";
 import { cn } from "cn";
 import {
@@ -31,6 +30,7 @@ import {
   POPUP,
   POPUP_ITEM,
   SEGMENT,
+  Segmented,
   SegmentList,
 } from "@/components/controls";
 import { HoverArea } from "@/components/ui/hover-area";
@@ -43,7 +43,14 @@ import {
   typeOf,
 } from "@/lib/parse";
 import { ParsedContent } from "./content";
-import type { Highlight } from "./document";
+import type { Selection } from "./document";
+import { elementAt, linkTwins } from "./twins";
+
+/** How parsed content shows: as it reads, or as the parser wrote it */
+const VIEWS = [
+  { value: "rendered", label: "Rendered" },
+  { value: "source", label: "Source" },
+];
 
 /** A bar above a tab's content */
 const BAR = "flex h-10 shrink-0 items-center gap-1 px-1";
@@ -53,13 +60,13 @@ export function Inspector({
   result,
   pages,
   filename,
-  highlight,
+  selection,
   onHiddenChange,
 }: {
   result: DocumentParserResult;
   pages: ParsedPage[];
   filename: string;
-  highlight: Highlight;
+  selection: Selection;
   onHiddenChange: (hidden: ElementType[]) => void;
 }) {
   return (
@@ -74,8 +81,8 @@ export function Inspector({
       <Tabs.Panel value="elements" className="flex min-h-0 flex-1 flex-col">
         <Elements
           pages={pages}
-          plain={result.return_format === "plain"}
-          highlight={highlight}
+          format={result.return_format}
+          selection={selection}
           onHiddenChange={onHiddenChange}
         />
       </Tabs.Panel>
@@ -92,18 +99,18 @@ export function Inspector({
 /** Every element in reading order, filtered by type and text, above the one selected */
 function Elements({
   pages,
-  plain,
-  highlight,
+  format,
+  selection,
   onHiddenChange,
 }: {
   pages: ParsedPage[];
-  plain: boolean;
-  highlight: Highlight;
+  format: ReturnFormat;
+  selection: Selection;
   onHiddenChange: (hidden: ElementType[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const search = useDeferredValue(query.trim().toLowerCase());
-  const { hidden, selected } = highlight;
+  const { hidden, selected } = selection;
 
   const { all, counts } = useMemo(() => {
     const elements: ParsedElement[] = [];
@@ -149,15 +156,20 @@ function Elements({
 
       <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-2">
         <HoverArea>
-          <ol className="flex flex-col">
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: clicks come from the rows' buttons, which keys reach */}
+          <ol
+            ref={linkTwins}
+            onClick={(e) => {
+              const id = elementAt(e.target);
+              if (id) selection.onSelect(id, "list");
+            }}
+            className="flex flex-col"
+          >
             {shown.map((element) => (
               <Row
                 key={element.id}
                 element={element}
-                hovered={highlight.hovered === element.id}
                 selected={selected === element.id}
-                onHover={highlight.onHover}
-                onSelect={highlight.onSelect}
               />
             ))}
           </ol>
@@ -173,8 +185,8 @@ function Elements({
         <Detail
           key={picked.id}
           element={picked}
-          plain={plain}
-          onClose={() => highlight.onSelect("", "list")}
+          format={format}
+          onClose={() => selection.onSelect("", "list")}
         />
       )}
     </>
@@ -236,30 +248,28 @@ function TypeMenu({
   );
 }
 
+/** An element's row; hovering lights it and its box, clicking selects it */
 const Row = memo(function Row({
   element,
-  hovered,
   selected,
-  onHover,
-  onSelect,
 }: {
   element: ParsedElement;
-  hovered: boolean;
   selected: boolean;
-  onHover: Highlight["onHover"];
-  onSelect: Highlight["onSelect"];
 }) {
   return (
-    <li id={`row-${element.id}`} data-row="" className="relative scroll-my-4">
+    // Offscreen rows skip layout and paint, which a long document has hundreds of
+    <li
+      data-row=""
+      className="relative [contain-intrinsic-size:auto_2rem] [content-visibility:auto]"
+    >
       <button
         type="button"
-        data-active={hovered || undefined}
+        id={`row-${element.id}`}
+        data-element={element.id}
+        data-twin={`box-${element.id}`}
         data-selected={selected || undefined}
-        onPointerEnter={() => onHover(element.id)}
-        onPointerLeave={() => onHover(null)}
-        onClick={() => onSelect(element.id, "list")}
         style={{ "--c": typeColor(element.type) } as CSSProperties}
-        className="grid w-full grid-cols-[6.5rem_minmax(0,1fr)_1.75rem] items-center gap-3 rounded-lg px-2.5 py-1.5 text-left transition-[background-color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring not-hover:data-active:bg-[oklch(from_var(--foreground)_l_c_h/0.055)] data-selected:bg-(--c)/12"
+        className="grid w-full scroll-my-4 grid-cols-[6.5rem_minmax(0,1fr)_1.75rem] items-center gap-3 rounded-lg px-2.5 py-1.5 text-left transition-[background-color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring data-linked:bg-[oklch(from_var(--foreground)_l_c_h/0.055)] data-selected:bg-(--c)/12"
       >
         <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           <span className="size-2 shrink-0 rounded-[2px] bg-(--c)" />
@@ -281,15 +291,16 @@ const Row = memo(function Row({
 /** The selected element in full: its content as it reads, and where and how sure */
 function Detail({
   element,
-  plain,
+  format,
   onClose,
 }: {
   element: ParsedElement;
-  plain: boolean;
+  format: ReturnFormat;
   onClose: () => void;
 }) {
   const [source, setSource] = useState(false);
   const [left, top, right, bottom] = element.bbox;
+  const plain = format === "plain";
 
   return (
     <section
@@ -307,13 +318,14 @@ function Detail({
         </span>
         <span className="ml-auto flex items-center">
           {!plain && (
-            <Toggle
-              pressed={source}
-              onPressedChange={setSource}
-              className={GHOST}
-            >
-              Source
-            </Toggle>
+            <Segmented
+              small
+              label="Show"
+              value={source ? "source" : "rendered"}
+              items={VIEWS}
+              onChange={(view) => setSource(view === "source")}
+              className="mr-1"
+            />
           )}
           <CopyButton text={() => element.content} />
           <button
@@ -335,12 +347,12 @@ function Detail({
           />
         )}
         {element.content.trim() ? (
-          source || plain ? (
+          source || format === "plain" ? (
             <pre className="font-mono text-xs leading-5 break-words whitespace-pre-wrap">
               {element.content}
             </pre>
           ) : (
-            <ParsedContent content={element.content} />
+            <ParsedContent content={element.content} format={format} />
           )
         ) : (
           <p className="text-[13px] text-muted-foreground italic">No text</p>
@@ -434,7 +446,8 @@ function TextView({
   filename: string;
 }) {
   const [source, setSource] = useState(false);
-  const plain = result.return_format === "plain";
+  const format = result.return_format;
+  const plain = format === "plain";
   const all = () =>
     result.chunks.reduce(
       (text, chunk) =>
@@ -446,18 +459,13 @@ function TextView({
     <>
       <div className={cn(BAR, "mt-2")}>
         {!plain && (
-          <ToggleGroup
-            value={[source ? "source" : "rendered"]}
-            onValueChange={([value]) => value && setSource(value === "source")}
-            className="flex gap-0.5"
-          >
-            <Toggle value="rendered" className={GHOST}>
-              Rendered
-            </Toggle>
-            <Toggle value="source" className={GHOST}>
-              Source
-            </Toggle>
-          </ToggleGroup>
+          <Segmented
+            small
+            label="Show"
+            value={source ? "source" : "rendered"}
+            items={VIEWS}
+            onChange={(view) => setSource(view === "source")}
+          />
         )}
         <span className="ml-auto flex items-center gap-0.5">
           <CopyButton text={all} label="Copy" />
@@ -480,12 +488,12 @@ function TextView({
               <h2 className="font-mono text-[11px] text-muted-foreground tabular-nums">
                 Page {index + 1}
               </h2>
-              {source || plain ? (
+              {source || format === "plain" ? (
                 <pre className="font-mono text-xs leading-5 break-words whitespace-pre-wrap">
                   {content}
                 </pre>
               ) : (
-                <ParsedContent content={content} />
+                <ParsedContent content={content} format={format} />
               )}
             </section>
           );

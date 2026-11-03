@@ -1,6 +1,8 @@
 "use client";
 
 import { Tabs } from "@base-ui/react/tabs";
+import { Toggle } from "@base-ui/react/toggle";
+import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { cn } from "cn";
 import { ArrowUpIcon, SquareIcon } from "lucide-react";
 import Image from "next/image";
@@ -60,9 +62,6 @@ export const POPUP =
 export const POPUP_ITEM =
   "relative flex min-h-8 cursor-default items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13.5px] text-foreground/90 outline-none transition-colors duration-100 select-none data-highlighted:bg-soft data-highlighted:text-foreground";
 
-export const POPUP_LABEL =
-  "px-2 pt-1.5 pb-1 font-mono text-[11px] text-muted-foreground";
-
 /** A segment of `SegmentList`, and of the option pickers that look like it */
 export const SEGMENT = cn(
   "relative inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium whitespace-nowrap text-muted-foreground transition-[color] hover:text-foreground data-active:text-foreground",
@@ -73,7 +72,7 @@ export const SEGMENT_TRACK =
   "relative inline-flex items-center rounded-full bg-muted/60 p-0.5 ring-1 ring-soft dark:bg-background/60";
 
 /** The pressed segment of a picker without a sliding indicator */
-export const SEGMENT_PRESSED =
+const SEGMENT_PRESSED =
   "data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-raised data-pressed:ring-1 data-pressed:ring-soft dark:data-pressed:bg-muted";
 
 /** The playground's mode switch: tabs on a track, the active one raised and sliding between them */
@@ -90,6 +89,51 @@ export function SegmentList({
       />
       {children}
     </Tabs.List>
+  );
+}
+
+/**
+ * `SegmentList`'s look for a choice that isn't a tab, such as how something
+ * shows; `small` fits a bar or a card's header
+ */
+export function Segmented<Value extends string>({
+  label,
+  value,
+  items,
+  onChange,
+  small = false,
+  className,
+}: {
+  label: string;
+  value: Value;
+  items: { value: Value; label: string }[];
+  onChange: (value: Value) => void;
+  small?: boolean;
+  className?: string;
+}) {
+  return (
+    <ToggleGroup
+      aria-label={label}
+      value={[value]}
+      // Pressing the pressed segment again keeps it
+      onValueChange={([next]) => next && onChange(next)}
+      className={cn(SEGMENT_TRACK, "flex", small ? "h-7" : "h-8", className)}
+    >
+      {items.map((item) => (
+        <Toggle
+          key={item.value}
+          value={item.value}
+          className={cn(
+            SEGMENT,
+            SEGMENT_PRESSED,
+            "h-full py-0",
+            small && "px-2.5 text-xs"
+          )}
+        >
+          {item.label}
+        </Toggle>
+      ))}
+    </ToggleGroup>
   );
 }
 

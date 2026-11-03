@@ -1,8 +1,6 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
-import { Toggle } from "@base-ui/react/toggle";
-import { ToggleGroup } from "@base-ui/react/toggle-group";
 import type {
   DocumentParserResult,
   ElementType,
@@ -13,14 +11,7 @@ import { FileTextIcon, RotateCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import {
-  BUTTON,
-  POPUP,
-  PRIMARY,
-  SEGMENT,
-  SEGMENT_PRESSED,
-  SEGMENT_TRACK,
-} from "@/components/controls";
+import { BUTTON, POPUP, PRIMARY, Segmented } from "@/components/controls";
 import { ShareButton } from "@/components/share-button";
 import { PageHeader } from "@/components/shell/shell";
 import { useRemember } from "@/lib/history";
@@ -34,7 +25,7 @@ import {
   pagesOf,
 } from "@/lib/parse";
 import { postJson } from "@/lib/request";
-import type { Highlight } from "./document";
+import type { Selection } from "./document";
 import { Inspector } from "./inspector";
 import { OptionsForm } from "./options";
 
@@ -63,7 +54,6 @@ export function ParseView({
   mode?: ParseMode;
 }) {
   const pages = useMemo(() => pagesOf(result), [result]);
-  const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [hidden, setHidden] = useState<ElementType[]>([]);
   const [pane, setPane] = useState<"document" | "elements">("document");
@@ -95,13 +85,10 @@ export function ParseView({
     );
   }, []);
 
-  const highlight: Highlight = {
-    hovered,
-    selected,
-    hidden,
-    onHover: setHovered,
-    onSelect: select,
-  };
+  const selection = useMemo<Selection>(
+    () => ({ selected, hidden, onSelect: select }),
+    [selected, hidden, select]
+  );
 
   let elements = 0;
   for (const page of pages) elements += page.elements.length;
@@ -145,23 +132,16 @@ export function ParseView({
         }
       />
 
-      <ToggleGroup
-        value={[pane]}
-        onValueChange={([value]) =>
-          value && setPane(value === "elements" ? "elements" : "document")
-        }
-        className={cn(SEGMENT_TRACK, "mx-2 mb-2 flex shrink-0 md:hidden")}
-      >
-        {(["document", "elements"] as const).map((value) => (
-          <Toggle
-            key={value}
-            value={value}
-            className={cn(SEGMENT, SEGMENT_PRESSED, "capitalize")}
-          >
-            {value}
-          </Toggle>
-        ))}
-      </ToggleGroup>
+      <Segmented
+        label="Show"
+        value={pane}
+        items={[
+          { value: "document", label: "Document" },
+          { value: "elements", label: "Elements" },
+        ]}
+        onChange={setPane}
+        className="mx-2 mb-2 shrink-0 md:hidden"
+      />
 
       <div className="grid min-h-0 flex-1 gap-3 px-2 pb-2 md:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] md:px-3 md:pb-3 xl:grid-cols-[minmax(0,1fr)_32rem]">
         <div
@@ -174,7 +154,7 @@ export function ParseView({
             fileUrl={`/api/files/${job.file_id}`}
             kind={kindOf(mimeType)}
             pages={pages}
-            highlight={highlight}
+            selection={selection}
           />
         </div>
         <div
@@ -187,7 +167,7 @@ export function ParseView({
             result={result}
             pages={pages}
             filename={filename}
-            highlight={highlight}
+            selection={selection}
             onHiddenChange={setHidden}
           />
         </div>

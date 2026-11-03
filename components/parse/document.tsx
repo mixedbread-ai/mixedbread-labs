@@ -4,6 +4,7 @@ import { Toggle } from "@base-ui/react/toggle";
 import type { ElementType } from "@mixedbread/sdk/resources/parsing/jobs";
 import { cn } from "cn";
 import { ChevronDownIcon, ChevronUpIcon, SquareDashedIcon } from "lucide-react";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import { type CSSProperties, memo, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { GHOST_ICON } from "@/components/controls";
@@ -13,6 +14,7 @@ import {
   typeColor,
   typeOf,
 } from "@/lib/parse";
+import { elementAt, linkTwins } from "./twins";
 
 // Set here, beside the components, so react-pdf's default can't overwrite it
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -28,33 +30,33 @@ const PDF_OPTIONS = {
 
 const MAX_WIDTH = 820;
 
-export interface Highlight {
-  hovered: string | null;
+export interface Selection {
   selected: string | null;
   hidden: readonly ElementType[];
-  onHover: (id: string | null) => void;
   onSelect: (id: string, from: "page" | "list") => void;
 }
 
 /**
  * The document's pages, each with its elements boxed over it, and floating
- * controls to move between pages. A PDF draws its pages, an image is its own page, and
- * anything else shows its layout on blank sheets.
+ * controls to move between pages. Pages and boxes show at once; a PDF draws
+ * into them as it arrives, an image is its own page, and anything else keeps
+ * its blank sheets.
  */
 export default function DocumentPages({
   fileUrl,
   kind,
   pages,
-  highlight,
+  selection,
 }: {
   fileUrl: string;
   kind: "pdf" | "image" | "none";
   pages: ParsedPage[];
-  highlight: Highlight;
+  selection: Selection;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const column = useRef<HTMLDivElement>(null);
   const width = useWidth(column);
+  const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [failed, setFailed] = useState(false);
   const [current, setCurrent] = useState(1);
   const [boxes, setBoxes] = useState(true);
@@ -69,52 +71,47 @@ export default function DocumentPages({
     });
   }
 
-  /** The page under the top of the view, read once a frame at most */
+  // The page under the top third of the view, read once a frame at most
   const frame = useRef(0);
   function track() {
     cancelAnimationFrame(frame.current);
     frame.current = requestAnimationFrame(() => {
       const element = scroller.current;
       if (!element) return;
-      const top =
+      const line =
         element.getBoundingClientRect().top + element.clientHeight / 3;
       let page = 1;
       for (const sheet of element.querySelectorAll<HTMLElement>(
         "[data-page]"
       )) {
-        if (sheet.getBoundingClientRect().top > top) break;
+        if (sheet.getBoundingClientRect().top > line) break;
         page = Number(sheet.dataset.page);
       }
       setCurrent(page);
     });
   }
 
-  const sheets = pages.map((page) => (
-    <Sheet
-      key={page.number}
-      page={page}
-      width={width}
-      root={scroller}
-      boxes={boxes}
-      highlight={highlight}
-      render={
-        blank
-          ? "none"
-          : kind === "pdf"
-            ? "pdf"
-            : page.number === 1
-              ? "image"
-              : "none"
-      }
-      fileUrl={fileUrl}
-    />
-  ));
-
   return (
     <div className="relative h-full min-h-0">
+      {kind === "pdf" && (
+        <Document
+          file={fileUrl}
+          options={PDF_OPTIONS}
+          onLoadSuccess={setPdf}
+          onLoadError={() => setFailed(true)}
+          loading={null}
+          error={null}
+          className="hidden"
+        />
+      )}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: the element list is the keyboard path to every box */}
       <div
         ref={scroller}
         onScroll={track}
+        onClick={(e) => {
+          const id = elementAt(e.target);
+          if (id) selection.onSelect(id, "page");
+        }}
         className="h-full overflow-y-auto overscroll-contain px-4 pt-6 pb-20 sm:px-10"
       >
         <div
@@ -129,25 +126,29 @@ export default function DocumentPages({
                 : "This file type has no preview, so the boxes show on blank pages."}
             </p>
           )}
-          {kind === "pdf" && !failed ? (
-            <Document
-              file={fileUrl}
-              options={PDF_OPTIONS}
-              onLoadError={() => setFailed(true)}
-              loading={null}
-              error={null}
-              className="flex flex-col gap-5"
-            >
-              {sheets}
-            </Document>
-          ) : (
-            sheets
-          )}
+          <div ref={linkTwins} className="flex flex-col gap-5">
+            {pages.map((page) => (
+              <Sheet
+                key={page.number}
+                page={page}
+                width={width}
+                root={scroller}
+                pdf={blank ? null : pdf}
+                image={
+                  kind === "image" && page.number === 1 ? fileUrl : undefined
+                }
+                waiting={!blank && kind === "pdf" && !pdf}
+                boxes={boxes}
+                selected={selection.selected}
+                hidden={selection.hidden}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Floats over the pages, as a viewer's controls do */}
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-popover/90 p-1 shadow-float ring-1 ring-soft backdrop-blur-md">
+      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-popover p-1 shadow-float ring-1 ring-soft">
         <button
           type="button"
           disabled={current <= 1}
@@ -220,22 +221,30 @@ function useNear(
   return near;
 }
 
+// Sharper than this costs canvas memory a phone's 3x screen can't show
+const MAX_PIXEL_RATIO = 2;
+
 const Sheet = memo(function Sheet({
   page,
   width,
   root,
-  render,
-  fileUrl,
+  pdf,
+  image,
+  waiting,
   boxes,
-  highlight,
+  selected,
+  hidden,
 }: {
   page: ParsedPage;
   width: number;
   root: React.RefObject<HTMLDivElement | null>;
-  render: "pdf" | "image" | "none";
-  fileUrl: string;
+  pdf: PDFDocumentProxy | null;
+  image?: string;
+  /** The PDF is still on its way */
+  waiting: boolean;
   boxes: boolean;
-  highlight: Highlight;
+  selected: string | null;
+  hidden: readonly ElementType[];
 }) {
   const ref = useRef<HTMLElement>(null);
   const near = useNear(ref, root);
@@ -250,13 +259,15 @@ const Sheet = memo(function Sheet({
       style={{ aspectRatio: `${page.width} / ${page.height}` }}
       className={cn(
         "relative w-full scroll-mt-4 rounded-[3px] bg-white shadow-raised ring-1 ring-black/5",
-        render !== "none" && !drawn && "motion-safe:animate-pulse"
+        (waiting || ((pdf || image) && !drawn)) && "motion-safe:animate-pulse"
       )}
     >
-      {near && width > 0 && render === "pdf" && (
+      {near && width > 0 && pdf && (
         <Page
+          pdf={pdf}
           pageNumber={page.number}
           width={width}
+          devicePixelRatio={Math.min(devicePixelRatio, MAX_PIXEL_RATIO)}
           renderTextLayer={false}
           renderAnnotationLayer={false}
           loading={null}
@@ -264,9 +275,9 @@ const Sheet = memo(function Sheet({
           className="absolute! inset-0 overflow-hidden rounded-[3px] [&_canvas]:h-full! [&_canvas]:w-full!"
         />
       )}
-      {render === "image" && (
+      {image && (
         <img
-          src={fileUrl}
+          src={image}
           alt=""
           onLoad={() => setDrawn(true)}
           className="absolute inset-0 size-full rounded-[3px]"
@@ -274,14 +285,11 @@ const Sheet = memo(function Sheet({
       )}
       {boxes &&
         page.elements.map((element) =>
-          highlight.hidden.includes(element.type) ? null : (
+          hidden.includes(element.type) ? null : (
             <Box
               key={element.id}
               element={element}
-              hovered={highlight.hovered === element.id}
-              selected={highlight.selected === element.id}
-              onHover={highlight.onHover}
-              onSelect={highlight.onSelect}
+              selected={selected === element.id}
             />
           )
         )}
@@ -289,18 +297,13 @@ const Sheet = memo(function Sheet({
   );
 });
 
+/** An element's box; hovering lights it and its row, clicking selects it */
 const Box = memo(function Box({
   element,
-  hovered,
   selected,
-  onHover,
-  onSelect,
 }: {
   element: ParsedElement;
-  hovered: boolean;
   selected: boolean;
-  onHover: Highlight["onHover"];
-  onSelect: Highlight["onSelect"];
 }) {
   const [left, top, width, height] = element.box;
   const style = {
@@ -312,19 +315,15 @@ const Box = memo(function Box({
   } as CSSProperties;
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: the element list is the keyboard path to every box
-    // biome-ignore lint/a11y/useKeyWithClickEvents: as above
     <div
       id={`box-${element.id}`}
-      data-active={hovered || selected || undefined}
+      data-element={element.id}
+      data-twin={`row-${element.id}`}
       data-selected={selected || undefined}
-      onPointerEnter={() => onHover(element.id)}
-      onPointerLeave={() => onHover(null)}
-      onClick={() => onSelect(element.id, "page")}
       style={style}
-      className="group absolute cursor-pointer scroll-my-24 rounded-[2px] bg-(--c)/5 outline-1 outline-(--c)/45 transition-[background-color,outline-color] duration-150 hover:bg-(--c)/12 hover:outline-(--c) data-active:bg-(--c)/14 data-active:outline-(--c) data-selected:z-10 data-selected:outline-2 data-selected:outline-offset-1"
+      className="group absolute cursor-pointer scroll-my-24 rounded-[2px] bg-(--c)/5 outline-1 outline-(--c)/45 transition-[background-color,outline-color] duration-150 hover:bg-(--c)/12 hover:outline-(--c) data-linked:bg-(--c)/14 data-linked:outline-(--c) data-selected:z-10 data-selected:bg-(--c)/14 data-selected:outline-2 data-selected:outline-offset-1 data-selected:outline-(--c)"
     >
-      <span className="pointer-events-none absolute bottom-full left-[-1px] mb-0.5 hidden rounded-[3px] bg-(--c) px-1 py-px text-[10px] leading-tight font-medium whitespace-nowrap text-white group-hover:block group-data-active:block">
+      <span className="pointer-events-none absolute bottom-full left-[-1px] mb-0.5 hidden rounded-[3px] bg-(--c) px-1 py-px text-[10px] leading-tight font-medium whitespace-nowrap text-white group-hover:block group-data-linked:block group-data-selected:block">
         {typeOf(element.type).label}
       </span>
     </div>

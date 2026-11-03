@@ -8,7 +8,7 @@ import {
   printedArea,
 } from "./layout";
 
-export type StoreChunk = StoreSearchResponse.Data;
+type StoreChunk = StoreSearchResponse.Data;
 
 /** What a chunk holds that search and chat read: its page layout, or its text */
 export interface Passage {

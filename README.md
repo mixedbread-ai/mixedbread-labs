@@ -2,8 +2,10 @@
 
 Try Mixedbread without signing up. Every result is a link anyone can open.
 
-- **Parse**: upload a document, pick the parsing options, and inspect what the parser read: every element boxed on its page, the text, and the raw JSON. Parse the same file again with other options to compare.
-- **Chat**: upload up to 10 files to make a chat, a Mixedbread store. Search it, or ask questions: GPT-5.6 Terra answers through the Vercel AI Gateway with Toast 1, Mixedbread's agentic search, as its one tool, and cites the elements of the pages it read.
+- **Parse**: pick the mode, format and element types, then drop a document. Inspect what the parser read: every element boxed on its page beside a filterable list, the text as it renders or as written, and the raw JSON. Parse the same file again with other options to compare.
+- **Chat**: add up to 10 files to make a chat, a Mixedbread store. Search it, or ask questions: GPT-5.6 Terra answers through the Vercel AI Gateway with Toast 1, Mixedbread's agentic search, as its one tool, and cites the elements of the pages it read.
+
+The sidebar lists the parses and chats this browser opened; there are no accounts.
 
 Files go from the browser straight to storage through presigned upload links, so none passes through the app's functions.
 

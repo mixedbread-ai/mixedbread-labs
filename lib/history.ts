@@ -75,21 +75,3 @@ export function useHistory(kind: HistoryEntry["kind"]): HistoryEntry[] {
   const all = useSyncExternalStore(subscribe, read, () => EMPTY);
   return all.filter((entry) => entry.kind === kind);
 }
-
-const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
-  ["year", 31_536_000],
-  ["month", 2_592_000],
-  ["day", 86_400],
-  ["hour", 3600],
-  ["minute", 60],
-];
-const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-
-export function timeAgo(at: number): string {
-  const seconds = (Date.now() - at) / 1000;
-  for (const [unit, size] of UNITS) {
-    if (seconds >= size)
-      return relative.format(-Math.floor(seconds / size), unit);
-  }
-  return "just now";
-}

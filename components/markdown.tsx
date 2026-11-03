@@ -10,10 +10,6 @@ export const Markdown = dynamic(
   { ssr: false }
 );
 
-export function preloadMarkdown() {
-  void import("@/components/chat/response");
-}
-
 // Streamdown passes each element its syntax node, which the DOM doesn't take
 interface Node {
   node?: unknown;
