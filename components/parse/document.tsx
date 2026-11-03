@@ -199,7 +199,11 @@ function useWidth(ref: React.RefObject<HTMLDivElement | null>): number {
   return width;
 }
 
-/** Whether an element is within two screens of the view, where pages draw ahead of the reader */
+/**
+ * Whether a page holds a drawn canvas: from when it comes within two screens
+ * of the view until it is three away. Scrolling back a little finds it still
+ * drawn, while a long document holds only the few canvases around the view.
+ */
 function useNear(
   ref: React.RefObject<HTMLElement | null>,
   root: React.RefObject<HTMLElement | null>
@@ -208,27 +212,26 @@ function useNear(
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setNear(entry?.isIntersecting ?? false),
+    const enter = new IntersectionObserver(
+      ([entry]) => entry?.isIntersecting && setNear(true),
       { root: root.current, rootMargin: "200% 0px" }
     );
-    observer.observe(element);
-    return () => observer.disconnect();
+    const leave = new IntersectionObserver(
+      ([entry]) => entry && !entry.isIntersecting && setNear(false),
+      { root: root.current, rootMargin: "300% 0px" }
+    );
+    enter.observe(element);
+    leave.observe(element);
+    return () => {
+      enter.disconnect();
+      leave.disconnect();
+    };
   }, [ref, root]);
   return near;
 }
 
 // Sharper than this costs canvas memory a phone's 3x screen can't show
 const MAX_PIXEL_RATIO = 2;
-
-// A kept page is drawn again once the column's width moves this far from it
-const REDRAW_RESIZE = 0.25;
-
-interface Snapshot {
-  src: string;
-  /** The column width it was drawn at */
-  width: number;
-}
 
 const Sheet = memo(function Sheet({
   page,
@@ -254,19 +257,9 @@ const Sheet = memo(function Sheet({
 }) {
   const ref = useRef<HTMLElement>(null);
   const near = useNear(ref, root);
-  const canvas = useRef<HTMLCanvasElement>(null);
-  // A drawn page is kept as an image and its canvas let go: scrolling back
-  // shows it at once, and a hundred pages don't hold a gigabyte of canvas
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const drawn = !!snapshot || imageLoaded;
-  const stale =
-    !snapshot || Math.abs(snapshot.width - width) > width * REDRAW_RESIZE;
-
-  useEffect(() => {
-    if (!snapshot) return;
-    return () => URL.revokeObjectURL(snapshot.src);
-  }, [snapshot]);
+  const [drawn, setDrawn] = useState(false);
+  // A canvas let go is drawn again when the page comes back
+  if (drawn && pdf && !near) setDrawn(false);
 
   return (
     <section
@@ -280,45 +273,24 @@ const Sheet = memo(function Sheet({
         (waiting || ((pdf || image) && !drawn)) && "motion-safe:animate-pulse"
       )}
     >
-      {near && width > 0 && pdf && stale && (
+      {near && width > 0 && pdf && (
         <Page
           pdf={pdf}
-          canvasRef={canvas}
           pageNumber={page.number}
           width={width}
           devicePixelRatio={Math.min(devicePixelRatio, MAX_PIXEL_RATIO)}
           renderTextLayer={false}
           renderAnnotationLayer={false}
           loading={null}
-          onRenderSuccess={() => {
-            const drawnWidth = width;
-            canvas.current?.toBlob(
-              (blob) =>
-                blob &&
-                setSnapshot({
-                  src: URL.createObjectURL(blob),
-                  width: drawnWidth,
-                }),
-              "image/webp",
-              0.92
-            );
-          }}
+          onRenderSuccess={() => setDrawn(true)}
           className="absolute! inset-0 overflow-hidden rounded-[3px] [&_canvas]:h-full! [&_canvas]:w-full!"
-        />
-      )}
-      {snapshot && (
-        <img
-          src={snapshot.src}
-          alt=""
-          decoding="async"
-          className="absolute inset-0 size-full rounded-[3px]"
         />
       )}
       {image && (
         <img
           src={image}
           alt=""
-          onLoad={() => setImageLoaded(true)}
+          onLoad={() => setDrawn(true)}
           className="absolute inset-0 size-full rounded-[3px]"
         />
       )}
