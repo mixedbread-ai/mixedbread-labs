@@ -57,8 +57,9 @@ export async function GET(
   return new Response(scan.body, {
     headers: {
       "Content-Type": scan.headers.get("Content-Type") ?? "image/jpeg",
-      // A file's pages never change: uploading it again makes a new file id
-      "Cache-Control": "public, max-age=31536000, immutable",
+      // A file's pages never change: uploading it again makes a new file id.
+      // Kept for the 30 days an unused chat lasts, not past its deletion.
+      "Cache-Control": "public, max-age=2592000, s-maxage=2592000, immutable",
     },
   });
 }
