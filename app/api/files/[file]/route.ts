@@ -1,8 +1,12 @@
 import { z } from "zod";
+import { cacheUntil } from "@/lib/api";
 import { getMixedbreadClient } from "@/lib/mixedbread";
 
 // What the parse view draws. Anything else, an uploaded HTML page or SVG
 // among them, comes as a download, so it can't run script on this origin.
+// The API deletes a parse and its file a week after the upload
+const PARSE_LIFETIME = 7 * 24 * 60 * 60 * 1000;
+
 const INLINE = [
   "application/pdf",
   "image/png",
@@ -14,8 +18,7 @@ const INLINE = [
 /**
  * A file's bytes, for the parse view to draw its pages. Streamed, so a large
  * file passes the function's response limit. A file id never changes what it
- * holds, so browsers and the CDN keep it for the week its parse lasts, and no
- * longer than the file.
+ * holds, so browsers and the CDN keep it while its parse lasts.
  */
 export async function GET(
   req: Request,
@@ -40,7 +43,7 @@ export async function GET(
       "Content-Type": inline ? info.mime_type : "application/octet-stream",
       "Content-Disposition": inline ? "inline" : "attachment",
       "Content-Length": String(info.bytes),
-      "Cache-Control": "public, max-age=604800, s-maxage=604800, immutable",
+      "Cache-Control": cacheUntil(Date.parse(info.created_at) + PARSE_LIFETIME),
     },
   });
 }

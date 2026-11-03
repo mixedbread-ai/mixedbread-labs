@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cacheUntil } from "@/lib/api";
 import { getMixedbreadClient } from "@/lib/mixedbread";
 
 const ParamsSchema = z.object({
@@ -32,16 +33,20 @@ export async function GET(
     return new Response(null, { status: 404 });
   }
 
-  const { data } = await getMixedbreadClient().stores.listChunks({
-    store_identifiers: [page.data.store],
-    top_k: 1,
-    filters: {
-      all: [
-        { key: "file_id", operator: "eq", value: page.data.file },
-        { key: "chunk_index", operator: "eq", value: page.data.index },
-      ],
-    },
-  });
+  const client = getMixedbreadClient();
+  const [{ data }, { expires_at }] = await Promise.all([
+    client.stores.listChunks({
+      store_identifiers: [page.data.store],
+      top_k: 1,
+      filters: {
+        all: [
+          { key: "file_id", operator: "eq", value: page.data.file },
+          { key: "chunk_index", operator: "eq", value: page.data.index },
+        ],
+      },
+    }),
+    client.stores.retrieve(page.data.store),
+  ]);
   const chunk = data[0];
   if (chunk?.type !== "image_url" || !chunk.image_url) {
     return new Response(null, { status: 404 });
@@ -58,8 +63,10 @@ export async function GET(
     headers: {
       "Content-Type": scan.headers.get("Content-Type") ?? "image/jpeg",
       // A file's pages never change: uploading it again makes a new file id.
-      // Kept for the 30 days an unused chat lasts, not past its deletion.
-      "Cache-Control": "public, max-age=2592000, s-maxage=2592000, immutable",
+      // Kept until the chat's current expiry, which use pushes back.
+      "Cache-Control": expires_at
+        ? cacheUntil(Date.parse(expires_at))
+        : "no-store",
     },
   });
 }

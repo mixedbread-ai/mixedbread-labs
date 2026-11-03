@@ -42,3 +42,14 @@ export function apiError(error: unknown): NextResponse {
     { status: 502 }
   );
 }
+
+/**
+ * Lets browsers and the CDN keep a response until what it shows is deleted,
+ * and no longer: a deleted or taken-down file stops being served with it
+ */
+export function cacheUntil(expires: number): string {
+  const seconds = Math.floor((expires - Date.now()) / 1000);
+  return seconds > 0
+    ? `public, max-age=${seconds}, s-maxage=${seconds}, immutable`
+    : "no-store";
+}

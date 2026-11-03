@@ -26,11 +26,11 @@ const nextConfig: NextConfig = {
     staleTimes: { dynamic: 300 },
   },
   // Page images are full-size scans, which next/image resizes to where they
-  // show. Their addresses never change what they point to, so a resized page
-  // keeps for the 30 days an unused chat lasts. The resizer fetches nothing
-  // else, a 100 MB file under /api/files least of all.
+  // show. A resized page keeps as long as its route lets it, which is until
+  // the chat expires; the floor here is low so it can't outlast that. The
+  // resizer fetches nothing else, a 100 MB file under /api/files least of all.
   images: {
-    minimumCacheTTL: 2_592_000,
+    minimumCacheTTL: 60,
     localPatterns: [{ pathname: "/api/chats/*/pages/**", search: "" }],
   },
   async headers() {
