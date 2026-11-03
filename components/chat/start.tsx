@@ -76,10 +76,7 @@ export function ChatStart() {
   return (
     <>
       <PageHeader title="New chat" />
-      <StartLayout
-        title="What do you want to ask?"
-        description="Add files to search and chat with. Answers cite the page they come from, and anyone with the link can ask too."
-      >
+      <StartLayout title="Chat with your files">
         <DropCard
           multiple
           accept={CHAT_ACCEPT}

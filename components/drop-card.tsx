@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { FileIcon, PlusIcon, UploadIcon, XIcon } from "lucide-react";
+import { FileIcon, GlobeIcon, PlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import { formatBytes, MAX_FILE_BYTES } from "@/lib/files";
 import { FOCUS, HEADLINE } from "./controls";
@@ -83,8 +83,14 @@ export function DropCard({
                 browse
               </span>
             </span>
-            <span className="text-xs text-balance text-muted-foreground">
-              {hint} · up to {formatBytes(MAX_FILE_BYTES)}
+            {/* Each phrase stays whole, so a narrow card breaks between them */}
+            <span className="text-xs text-muted-foreground">
+              <span className="inline-block">{hint},</span>{" "}
+              <span className="inline-block">
+                {multiple ? "" : "up to "}
+                {formatBytes(MAX_FILE_BYTES)}
+                {multiple ? " each" : ""}
+              </span>
             </span>
           </span>
         </label>
@@ -174,33 +180,36 @@ export function FileRow({
   );
 }
 
-/** A start page: a headline over the card, in the middle of the panel */
+/**
+ * A start page: a headline over the card, in the middle of the panel, and
+ * under it a reminder that what goes up is public
+ */
 export function StartLayout({
   title,
-  description,
   children,
 }: {
+  /** What the page does, in a few words */
   title: string;
-  description: string;
   children: ReactNode;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <div className="mx-auto my-auto flex w-full max-w-xl flex-col items-center gap-8 px-4 py-10">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <h1 className={cn(HEADLINE, "motion-safe:animate-rise")}>{title}</h1>
-          <p
-            className="max-w-md text-sm leading-6 text-balance text-muted-foreground motion-safe:animate-rise"
-            style={{ animationDelay: "60ms" }}
-          >
-            {description}
-          </p>
-        </div>
+        <h1 className={cn(HEADLINE, "text-center motion-safe:animate-rise")}>
+          {title}
+        </h1>
         <div
           className="flex w-full flex-col gap-4 motion-safe:animate-rise"
-          style={{ animationDelay: "120ms" }}
+          style={{ animationDelay: "60ms" }}
         >
           {children}
+          <p
+            role="note"
+            className="flex items-center justify-center gap-1.5 text-[13px] text-muted-foreground"
+          >
+            <GlobeIcon className="size-3.5 -translate-y-[0.5px]" />
+            Public to anyone with the link
+          </p>
         </div>
       </div>
     </div>
