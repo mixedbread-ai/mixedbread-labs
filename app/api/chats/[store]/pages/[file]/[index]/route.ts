@@ -21,13 +21,16 @@ const SOURCE_WIDTH = 2048;
  * image streams through.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   {
     params,
   }: { params: Promise<{ store: string; file: string; index: string }> }
 ) {
   const page = ParamsSchema.safeParse(await params);
-  if (!page.success) return new Response(null, { status: 404 });
+  // A query string would make every request miss the CDN's copy
+  if (!page.success || new URL(req.url).search) {
+    return new Response(null, { status: 404 });
+  }
 
   const { data } = await getMixedbreadClient().stores.listChunks({
     store_identifiers: [page.data.store],

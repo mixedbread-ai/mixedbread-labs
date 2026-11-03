@@ -22,3 +22,10 @@ Set `MXBAI_API_KEY` and `AI_GATEWAY_API_KEY` in `.env.local`, then open http://l
 ## Deploy
 
 On Vercel, set `MXBAI_API_KEY`; the AI Gateway authenticates through the deployment's OIDC token. The key should belong to an organization used only by Labs: every store and parsing job it can reach is open to anyone with its link. `vercel.json` keeps the functions in `iad1`, next to the API, and BotID guards the routes the page calls (not file and page image loads, which can't carry its headers).
+
+Everyone shares the one key, so cap what a visitor can spend before opening Labs up:
+
+- Set a spend limit on the Labs organization. The API stops serving it once the limit is reached.
+- Add Vercel Firewall rate limit rules per IP on `/api/*`, tighter on `/api/uploads`, `/api/parse` and `/api/chats/*/chat`.
+
+The API keeps parse results and uploaded files for 7 days, and a chat until 30 days after its last use.

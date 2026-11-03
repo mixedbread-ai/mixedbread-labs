@@ -24,7 +24,7 @@ const BUTTON_BASE = cn(
   FOCUS
 );
 
-/** A start page's question, as the S-1 playground sets it */
+/** A start page's question */
 export const HEADLINE =
   "text-[1.75rem] leading-[1.1] font-normal tracking-[-0.025em] text-balance sm:text-[2.25rem]";
 

@@ -16,7 +16,7 @@ const loadFiles = cache(async (store: string) => {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const files = await loadFiles((await params).store);
-  return { title: files?.[0]?.filename ?? "Chat" };
+  return { title: files?.[0]?.filename ?? "Chat", robots: { index: false } };
 }
 
 export default async function Page({ params }: Props) {

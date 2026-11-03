@@ -21,7 +21,8 @@ const loadJob = cache(async (id: string) => {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const job = await loadJob((await params).job);
-  return { title: job?.filename ?? "Parse" };
+  // A result is open to anyone with its link, not to search engines
+  return { title: job?.filename ?? "Parse", robots: { index: false } };
 }
 
 export default async function Page({ params, searchParams }: Props) {

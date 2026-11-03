@@ -26,10 +26,12 @@ const nextConfig: NextConfig = {
     staleTimes: { dynamic: 300 },
   },
   // Page images are full-size scans, which next/image resizes to where they
-  // show. They come from /api/chats/[store]/pages, whose addresses never change what they
-  // point to, so a resized page keeps for as long as the cache allows.
+  // show. Their addresses never change what they point to, so a resized page
+  // keeps for as long as the cache allows. The resizer fetches nothing else,
+  // a 100 MB file under /api/files least of all.
   images: {
     minimumCacheTTL: 31_536_000,
+    localPatterns: [{ pathname: "/api/chats/*/pages/**", search: "" }],
   },
   async headers() {
     return [
@@ -47,6 +49,17 @@ const nextConfig: NextConfig = {
           {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains; preload",
+          },
+        ],
+      },
+      // Nothing the API serves runs as a page: an uploaded file opened from
+      // its link gets no script and no origin of its own
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "sandbox; default-src 'none'",
           },
         ],
       },

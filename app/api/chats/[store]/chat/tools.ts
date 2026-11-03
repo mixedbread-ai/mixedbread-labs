@@ -5,10 +5,7 @@ import { type Passage, passageOf } from "@/lib/passages";
 
 const TOP_K = 8;
 
-/**
- * The tool result, in the envelope Mixedbread's harness guide recommends:
- * short stable handles, and a chunk seen earlier in the run as a stub
- */
+/** The tool result: short stable handles, and a chunk seen earlier in the run as a stub */
 export interface SearchOutput {
   query: string;
   candidate_count: number;

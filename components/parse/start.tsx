@@ -44,7 +44,7 @@ export function ParseStart() {
       <PageHeader title="Parse" />
       <StartLayout
         title="What should we parse?"
-        description="Pick the options, then drop a document to see every element the parser finds, boxed on its page."
+        description="Pick the options, then drop a document to see every element the parser finds, boxed on its page. Anyone with the result's link can open it for 7 days."
       >
         <DropCard
           accept={PARSE_ACCEPT}

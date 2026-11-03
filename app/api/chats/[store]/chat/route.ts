@@ -18,6 +18,9 @@ Each search result is a passage: a chunk_id, its file, and either its page's lay
 const MAX_STEPS = 8;
 const HISTORY_LIMIT = 8;
 const MAX_QUESTION_LENGTH = 1000;
+// Room for a full answer; the client sends the history, so a forged one is
+// cut here rather than billed as input
+const MAX_MESSAGE_LENGTH = 20_000;
 const CITATIONS = new RegExp(
   String.raw`\[\d+\]\(${CITATION_HREF}[\w.]+\)`,
   "g"
@@ -47,7 +50,11 @@ function toInput(messages: z.infer<typeof BodySchema>["messages"]) {
     for (const part of message.parts) {
       if (part.type === "text" && part.text) texts.push(part.text);
     }
-    const content = texts.join("\n\n").replace(CITATIONS, "").trim();
+    const content = texts
+      .join("\n\n")
+      .replace(CITATIONS, "")
+      .trim()
+      .slice(0, MAX_MESSAGE_LENGTH);
     if (content) input.push({ role: message.role, content });
   }
   return input;
