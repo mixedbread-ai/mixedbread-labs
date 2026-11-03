@@ -10,7 +10,7 @@ import { cn } from "cn";
 import { FileTextIcon, RotateCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { BUTTON, POPUP, PRIMARY, Segmented } from "@/components/controls";
 import { ShareButton } from "@/components/share-button";
 import { PageHeader } from "@/components/shell/shell";
@@ -20,13 +20,14 @@ import {
   FORMATS,
   jobHref,
   MODES,
+  type ParsedElement,
   type ParseMode,
   type ParseOptions,
   pagesOf,
 } from "@/lib/parse";
 import { postJson } from "@/lib/request";
 import type { Selection } from "./document";
-import { Inspector } from "./inspector";
+import { Detail, Inspector, type InspectorTab } from "./inspector";
 import { OptionsForm } from "./options";
 
 const DocumentPages = dynamic(() => import("./document"), { ssr: false });
@@ -56,7 +57,10 @@ export function ParseView({
   const pages = useMemo(() => pagesOf(result), [result]);
   const [selected, setSelected] = useState<string | null>(null);
   const [hidden, setHidden] = useState<ElementType[]>([]);
-  const [pane, setPane] = useState<"document" | "elements">("document");
+  const [tab, setTab] = useState<InspectorTab>("elements");
+  // Phones show one view at a time: the pages, or one of the inspector's tabs
+  const [onPage, setOnPage] = useState(true);
+  const wide = useWide();
   const filename = job.filename ?? "document";
   const format = FORMATS.find(({ value }) => value === result.return_format);
   const modeLabel = MODES.find(({ value }) => value === mode)?.label;
@@ -68,21 +72,11 @@ export function ParseView({
     detail: [modeLabel, format?.label].filter(Boolean).join(" · "),
   });
 
-  // Selecting on one side brings the element into view on the other
+  // Selecting on one side brings the element into view on the other, where
+  // that side shows; a phone stays on its view and opens the element's card
   const select = useCallback((id: string, from: "page" | "list") => {
     setSelected(id || null);
-    if (!id) return;
-    setPane(from === "list" ? "document" : "elements");
-    requestAnimationFrame(() =>
-      document
-        .getElementById(from === "page" ? `row-${id}` : `box-${id}`)
-        ?.scrollIntoView({
-          block: from === "page" ? "nearest" : "center",
-          behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-            ? "instant"
-            : "smooth",
-        })
-    );
+    if (id) reveal(from === "page" ? `row-${id}` : `box-${id}`);
   }, []);
 
   const selection = useMemo<Selection>(
@@ -91,7 +85,29 @@ export function ParseView({
   );
 
   let elements = 0;
-  for (const page of pages) elements += page.elements.length;
+  let picked: ParsedElement | undefined;
+  for (const page of pages) {
+    elements += page.elements.length;
+    picked ??= page.elements.find((element) => element.id === selected);
+  }
+  const detail = picked && (
+    <Detail
+      key={picked.id}
+      element={picked}
+      format={result.return_format}
+      onClose={() => setSelected(null)}
+      onShowOnPage={
+        wide || onPage
+          ? undefined
+          : () => {
+              setOnPage(true);
+              reveal(`box-${picked.id}`);
+            }
+      }
+      // On a phone it sits over whichever view shows, like a sheet
+      className={cn(!wide && "fixed inset-x-2 bottom-2 z-40 shadow-float")}
+    />
+  );
   const seconds =
     job.started_at && job.finished_at
       ? (Date.parse(job.finished_at) - Date.parse(job.started_at)) / 1000
@@ -134,20 +150,20 @@ export function ParseView({
 
       <Segmented
         label="Show"
-        value={pane}
-        items={[
-          { value: "document", label: "Document" },
-          { value: "elements", label: "Elements" },
-        ]}
-        onChange={setPane}
+        value={onPage ? "document" : tab}
+        items={VIEWS}
+        onChange={(view) => {
+          setOnPage(view === "document");
+          if (view !== "document") setTab(view);
+        }}
         className="mx-2 mb-2 shrink-0 md:hidden"
       />
 
-      <div className="grid min-h-0 flex-1 gap-3 px-2 pb-2 md:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] md:px-3 md:pb-3 xl:grid-cols-[minmax(0,1fr)_32rem]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-2 pb-2 md:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] md:px-3 md:pb-3 xl:grid-cols-[minmax(0,1fr)_32rem]">
         <div
           className={cn(
             "min-h-0 overflow-hidden rounded-xl bg-background",
-            pane !== "document" && "max-md:hidden"
+            !onPage && "max-md:hidden"
           )}
         >
           <DocumentPages
@@ -157,22 +173,55 @@ export function ParseView({
             selection={selection}
           />
         </div>
-        <div
-          className={cn(
-            "flex min-h-0 flex-col",
-            pane !== "elements" && "max-md:hidden"
-          )}
-        >
+        <div className={cn("flex min-h-0 flex-col", onPage && "max-md:hidden")}>
           <Inspector
             result={result}
             pages={pages}
             filename={filename}
+            tab={tab}
+            onTabChange={setTab}
             selection={selection}
+            detail={wide && detail}
             onHiddenChange={setHidden}
           />
         </div>
       </div>
+      {!wide && detail}
     </>
+  );
+}
+
+const VIEWS: { value: "document" | InspectorTab; label: string }[] = [
+  { value: "document", label: "Document" },
+  { value: "elements", label: "Elements" },
+  { value: "text", label: "Text" },
+  { value: "json", label: "JSON" },
+];
+
+/** Scrolls an element into the middle of its view, after the render that shows it */
+function reveal(id: string) {
+  requestAnimationFrame(() =>
+    document.getElementById(id)?.scrollIntoView({
+      block: "center",
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    })
+  );
+}
+
+const WIDE = "(min-width: 48rem)";
+
+/** Whether both panes show side by side; the server renders the wide layout */
+function useWide(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = matchMedia(WIDE);
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => matchMedia(WIDE).matches,
+    () => true
   );
 }
 
@@ -208,7 +257,7 @@ function Reparse({
     <Popover.Root>
       <Popover.Trigger className={BUTTON}>
         <RotateCwIcon />
-        <span className="max-sm:hidden">Parse again</span>
+        Parse again
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner align="end" sideOffset={8} className="z-50">

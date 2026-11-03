@@ -19,6 +19,7 @@ import {
 import {
   type CSSProperties,
   memo,
+  type ReactNode,
   useDeferredValue,
   useEffect,
   useMemo,
@@ -47,6 +48,8 @@ import type { Selection } from "./document";
 import { ParsedContent, preloadParsedContent } from "./parsed-content";
 import { elementAt, linkTwins } from "./twins";
 
+export type InspectorTab = "elements" | "text" | "json";
+
 /** How parsed content shows: as it reads, or as the parser wrote it */
 const VIEWS = [
   { value: "rendered", label: "Rendered" },
@@ -61,20 +64,32 @@ export function Inspector({
   result,
   pages,
   filename,
+  tab,
+  onTabChange,
   selection,
+  detail,
   onHiddenChange,
 }: {
   result: DocumentParserResult;
   pages: ParsedPage[];
   filename: string;
+  tab: InspectorTab;
+  onTabChange: (tab: InspectorTab) => void;
   selection: Selection;
+  /** The selected element's card, under the list where it shows here */
+  detail?: ReactNode;
   onHiddenChange: (hidden: ElementType[]) => void;
 }) {
   useEffect(preloadParsedContent, []);
 
   return (
-    <Tabs.Root defaultValue="elements" className="flex h-full min-h-0 flex-col">
-      <SegmentList className="flex shrink-0">
+    <Tabs.Root
+      value={tab}
+      onValueChange={(next: InspectorTab) => onTabChange(next)}
+      className="flex h-full min-h-0 flex-col"
+    >
+      {/* Phones switch views from one row above both panes instead */}
+      <SegmentList className="flex shrink-0 max-md:hidden">
         {["Elements", "Text", "JSON"].map((label) => (
           <Tabs.Tab key={label} value={label.toLowerCase()} className={SEGMENT}>
             {label}
@@ -89,10 +104,10 @@ export function Inspector({
       >
         <Elements
           pages={pages}
-          format={result.return_format}
           selection={selection}
           onHiddenChange={onHiddenChange}
         />
+        {detail}
       </Tabs.Panel>
       <Tabs.Panel value="text" className="flex min-h-0 flex-1 flex-col">
         <TextView result={result} filename={filename} />
@@ -107,12 +122,10 @@ export function Inspector({
 /** Every element in reading order, filtered by type and text, above the one selected */
 function Elements({
   pages,
-  format,
   selection,
   onHiddenChange,
 }: {
   pages: ParsedPage[];
-  format: ReturnFormat;
   selection: Selection;
   onHiddenChange: (hidden: ElementType[]) => void;
 }) {
@@ -137,10 +150,6 @@ function Elements({
       !hidden.includes(element.type) &&
       (!search || element.preview.toLowerCase().includes(search))
   );
-  const picked = selected
-    ? all.find((element) => element.id === selected)
-    : undefined;
-
   return (
     <>
       <div className="flex shrink-0 items-center gap-1 pt-3 pb-2">
@@ -188,15 +197,6 @@ function Elements({
           </p>
         )}
       </div>
-
-      {picked && (
-        <Detail
-          key={picked.id}
-          element={picked}
-          format={format}
-          onClose={() => selection.onSelect("", "list")}
-        />
-      )}
     </>
   );
 }
@@ -297,14 +297,19 @@ const Row = memo(function Row({
 });
 
 /** The selected element in full: its content as it reads, and where and how sure */
-function Detail({
+export function Detail({
   element,
   format,
   onClose,
+  onShowOnPage,
+  className,
 }: {
   element: ParsedElement;
   format: ReturnFormat;
   onClose: () => void;
+  /** Set where the page isn't in view, as in the list on a phone */
+  onShowOnPage?: () => void;
+  className?: string;
 }) {
   const [source, setSource] = useState(false);
   const [left, top, right, bottom] = element.bbox;
@@ -314,7 +319,10 @@ function Detail({
     <section
       aria-label="Selected element"
       style={{ "--c": typeColor(element.type) } as CSSProperties}
-      className="flex max-h-[55%] shrink-0 flex-col overflow-hidden rounded-xl bg-card shadow-raised ring-1 ring-soft motion-safe:animate-rise"
+      className={cn(
+        "flex max-h-[55%] shrink-0 flex-col overflow-hidden rounded-xl bg-card shadow-raised ring-1 ring-soft motion-safe:animate-rise",
+        className
+      )}
     >
       <div className="flex h-10 shrink-0 items-center gap-2 pr-1 pl-2.5">
         <span className="size-2 rounded-[2px] bg-(--c)" />
@@ -370,10 +378,21 @@ function Detail({
             {element.summary}
           </p>
         )}
-        <p className="text-xs text-muted-foreground tabular-nums">
-          Box {Math.round(left)}, {Math.round(top)} to {Math.round(right)},{" "}
-          {Math.round(bottom)} px
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground tabular-nums">
+            Box {Math.round(left)}, {Math.round(top)} to {Math.round(right)},{" "}
+            {Math.round(bottom)} px
+          </p>
+          {onShowOnPage && (
+            <button
+              type="button"
+              onClick={onShowOnPage}
+              className={cn(GHOST, "-my-1 -mr-1 text-foreground")}
+            >
+              Show on page
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );
