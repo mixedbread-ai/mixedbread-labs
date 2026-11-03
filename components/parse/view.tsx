@@ -9,14 +9,14 @@ import type {
   ParsingJob,
 } from "@mixedbread/sdk/resources/parsing/jobs";
 import { cn } from "cn";
-import { ArrowUpIcon, FileTextIcon, RotateCwIcon } from "lucide-react";
+import { FileTextIcon, RotateCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import {
   BUTTON,
-  FOCUS,
   POPUP,
+  PRIMARY,
   SEGMENT,
   SEGMENT_PRESSED,
   SEGMENT_TRACK,
@@ -36,7 +36,7 @@ import {
 import { postJson } from "@/lib/request";
 import type { Highlight } from "./document";
 import { Inspector } from "./inspector";
-import { OptionsBar } from "./options";
+import { OptionsForm } from "./options";
 
 const DocumentPages = dynamic(() => import("./document"), { ssr: false });
 
@@ -235,30 +235,27 @@ function Reparse({
           <Popover.Popup
             className={cn(
               POPUP,
-              "flex w-[min(26rem,calc(100vw-1rem))] flex-col gap-1 p-2"
+              "flex w-[min(24rem,calc(100vw-1rem))] flex-col gap-4 p-4"
             )}
           >
-            <Popover.Title className="px-1.5 pt-1 text-[13px] text-muted-foreground">
-              Parse this file again with
-            </Popover.Title>
-            <div className="flex items-center gap-1">
-              <OptionsBar options={options} onChange={setOptions} />
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={() => void submit()}
-                className={cn(
-                  "ml-auto flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background shadow-raised transition-[scale,opacity] duration-200 ease-out-quint active:scale-90 disabled:opacity-40",
-                  FOCUS
-                )}
-              >
-                <ArrowUpIcon className="size-4" strokeWidth={2.25} />
-                <span className="sr-only">Parse</span>
-              </button>
+            <div className="flex flex-col gap-1">
+              <Popover.Title className="text-sm font-medium">
+                Parse again
+              </Popover.Title>
+              <Popover.Description className="text-xs text-muted-foreground">
+                The same file with other options, as a new link to compare.
+              </Popover.Description>
             </div>
-            {error && (
-              <p className="px-1.5 pb-1 text-xs text-destructive">{error}</p>
-            )}
+            <OptionsForm options={options} onChange={setOptions} />
+            {error && <p className="text-xs text-destructive">{error}</p>}
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => void submit()}
+              className={cn(PRIMARY, "w-full")}
+            >
+              {submitting ? "Starting…" : "Parse"}
+            </button>
           </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>

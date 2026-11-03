@@ -1,39 +1,30 @@
 "use client";
 
 import { cn } from "cn";
-import { ArrowUpIcon, FileIcon, UploadIcon, XIcon } from "lucide-react";
+import { FileIcon, PlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import { formatBytes, MAX_FILE_BYTES } from "@/lib/files";
 import { FOCUS } from "./controls";
 
 /**
- * The composer, holding files instead of a question: drop or browse into it,
- * pick options in its bar, and send. `children` are the picked files.
+ * A raised card that takes files by drop or by browsing. Empty, the whole card
+ * is the prompt; once files are in, `children` lists them, with room to add
+ * more when it takes several.
  */
 export function DropCard({
   accept,
   multiple = false,
   hint,
+  disabled = false,
   onFiles,
-  bar,
-  ready,
-  busy,
-  action,
-  onSubmit,
   children,
 }: {
   accept: string;
   multiple?: boolean;
-  /** What it takes, under the drop prompt */
+  /** What it takes, under the prompt */
   hint: string;
+  disabled?: boolean;
   onFiles: (files: File[]) => void;
-  /** Pickers at the start of the bar */
-  bar?: ReactNode;
-  ready: boolean;
-  busy: boolean;
-  /** The send button's name */
-  action: string;
-  onSubmit: () => void;
   children?: ReactNode;
 }) {
   const id = useId();
@@ -46,7 +37,7 @@ export function DropCard({
       data-over={over || undefined}
       onDragOver={(e) => {
         e.preventDefault();
-        setOver(true);
+        if (!disabled) setOver(true);
       }}
       onDragLeave={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false);
@@ -55,15 +46,18 @@ export function DropCard({
         e.preventDefault();
         setOver(false);
         const files = Array.from(e.dataTransfer.files);
-        if (files.length > 0) onFiles(multiple ? files : files.slice(0, 1));
+        if (!disabled && files.length > 0) {
+          onFiles(multiple ? files : files.slice(0, 1));
+        }
       }}
-      className="flex w-full flex-col rounded-[22px] bg-card shadow-composer ring-1 ring-soft transition-[box-shadow] duration-200 ease-smooth data-over:shadow-[var(--elevation-composer),0_0_0_4px_color-mix(in_oklch,var(--logo-orange)_14%,transparent)] data-over:ring-logo/60"
+      className="w-full rounded-[22px] bg-card p-2 shadow-composer ring-1 ring-soft transition-[box-shadow] duration-200 ease-smooth data-over:shadow-[var(--elevation-composer),0_0_0_4px_color-mix(in_oklch,var(--logo-orange)_14%,transparent)] data-over:ring-logo/60"
     >
       <input
         id={id}
         type="file"
         accept={accept}
         multiple={multiple}
+        disabled={disabled}
         className="peer sr-only"
         onChange={(e) => {
           const files = Array.from(e.currentTarget.files ?? []);
@@ -74,7 +68,7 @@ export function DropCard({
       {empty ? (
         <label
           htmlFor={id}
-          className="group m-2 mb-0 flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl px-6 text-center transition-[background-color] duration-200 peer-focus-visible:outline-2 peer-focus-visible:outline-ring hover:bg-muted/40"
+          className="group flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl px-6 py-8 text-center transition-[background-color] duration-200 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring hover:bg-muted/50"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-soft text-muted-foreground transition-[color,scale] duration-300 ease-spring group-hover:text-foreground in-data-over:scale-110 in-data-over:text-logo">
             <UploadIcon className="size-4.5" />
@@ -86,52 +80,37 @@ export function DropCard({
                 browse
               </span>
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-balance text-muted-foreground">
               {hint} · up to {formatBytes(MAX_FILE_BYTES)}
             </span>
           </span>
         </label>
       ) : (
-        <ul className="flex flex-col gap-1.5 px-2.5 pt-2.5">{children}</ul>
-      )}
-      <div className="flex flex-wrap items-center gap-1 px-2.5 pt-2 pb-2.5">
-        {!empty && multiple && (
-          <label
-            htmlFor={id}
-            className="flex h-8 cursor-pointer items-center gap-1 rounded-full px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-soft hover:text-foreground"
-          >
-            <UploadIcon className="size-3.5" />
-            Add
-          </label>
-        )}
-        {bar}
-        <button
-          type="button"
-          disabled={!ready || busy}
-          onClick={onSubmit}
-          data-busy={busy || undefined}
-          className={cn(
-            "group/send relative ml-auto flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background shadow-raised transition-[background-color,color,scale] duration-200 ease-out-quint active:scale-90 disabled:cursor-default disabled:bg-soft disabled:text-muted-foreground disabled:shadow-none data-busy:bg-foreground data-busy:text-background",
-            FOCUS
+        <ul className="flex flex-col gap-1.5">
+          {children}
+          {multiple && !disabled && (
+            <li>
+              <label
+                htmlFor={id}
+                className="flex h-11 cursor-pointer items-center gap-2.5 rounded-xl px-3 text-[13.5px] text-muted-foreground outline-1 -outline-offset-1 outline-soft transition-[background-color,color] duration-150 outline-dashed peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:outline-solid hover:bg-muted/50 hover:text-foreground"
+              >
+                <PlusIcon className="size-4" />
+                Add more files
+              </label>
+            </li>
           )}
-        >
-          <span
-            aria-hidden="true"
-            className="absolute -inset-[3px] rounded-full border-[1.5px] border-transparent border-t-logo opacity-0 transition-opacity duration-300 group-data-busy/send:opacity-100 group-data-busy/send:motion-safe:animate-spin"
-          />
-          <ArrowUpIcon className="size-4" strokeWidth={2.25} />
-          <span className="sr-only">{action}</span>
-        </button>
-      </div>
+        </ul>
+      )}
     </div>
   );
 }
 
-/** A picked file on its way up: its name, size and how far it has got */
+/** A picked file: its name, and its size or how far it has got */
 export function FileRow({
   name,
   size,
   progress,
+  status,
   error,
   onRemove,
 }: {
@@ -139,35 +118,44 @@ export function FileRow({
   size: number;
   /** 0 to 1; 1 once the API holds the file */
   progress: number;
+  /** Replaces the size once uploaded, such as what happens next */
+  status?: string;
   error?: string;
   onRemove?: () => void;
 }) {
   const done = progress >= 1;
+  let note = status ?? formatBytes(size);
+  if (!done) note = `Uploading ${Math.round(progress * 100)}%`;
+  if (error) note = "Couldn't upload";
 
   return (
-    <li className="relative flex h-11 items-center gap-2.5 overflow-hidden rounded-xl bg-muted/60 px-3 text-[13.5px] motion-safe:animate-rise dark:bg-muted/40">
+    <li className="relative flex h-11 items-center gap-2.5 overflow-hidden rounded-xl bg-muted/60 pr-1.5 pl-3 text-[13.5px] motion-safe:animate-rise dark:bg-muted/40">
       <FileIcon className="size-4 shrink-0 text-muted-foreground" />
       <span className="min-w-0 flex-1 truncate">{name}</span>
       <span
+        key={note}
+        title={error}
         className={cn(
-          "shrink-0 font-mono text-xs tabular-nums",
+          "max-w-[45%] shrink-0 truncate text-xs tabular-nums motion-safe:animate-swap-in",
           error ? "text-destructive" : "text-muted-foreground"
         )}
       >
-        {error ?? (done ? formatBytes(size) : `${Math.round(progress * 100)}%`)}
+        {note}
       </span>
-      {onRemove && (
+      {onRemove ? (
         <button
           type="button"
           onClick={onRemove}
           className={cn(
-            "-mr-1 flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-soft hover:text-foreground",
+            "flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-soft hover:text-foreground",
             FOCUS
           )}
         >
-          <XIcon className="size-3.5" />
+          <XIcon className="size-4" />
           <span className="sr-only">Remove {name}</span>
         </button>
+      ) : (
+        <span className="w-1.5 shrink-0" />
       )}
       {!done && !error && (
         <span
@@ -192,7 +180,7 @@ export function StartLayout({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="mx-auto my-auto flex w-full max-w-2xl flex-col items-center gap-8 px-4 py-10">
+      <div className="mx-auto my-auto flex w-full max-w-xl flex-col items-center gap-8 px-4 py-10">
         <div className="flex flex-col items-center gap-3 text-center">
           <h1 className="text-[1.75rem] leading-[1.1] font-normal tracking-[-0.025em] text-balance motion-safe:animate-rise sm:text-[2.25rem]">
             {title}
@@ -205,7 +193,7 @@ export function StartLayout({
           </p>
         </div>
         <div
-          className="w-full motion-safe:animate-rise"
+          className="flex w-full flex-col gap-4 motion-safe:animate-rise"
           style={{ animationDelay: "120ms" }}
         >
           {children}

@@ -65,7 +65,8 @@ function SidebarContent() {
 
   return (
     <>
-      <div className="flex h-13 shrink-0 items-center px-3">
+      {/* Centered on the panel header, which starts below the panel's margin */}
+      <div className="mt-2 flex h-12 shrink-0 items-center px-3">
         <Link
           href="/"
           onClick={() => drawer.close()}
@@ -220,7 +221,7 @@ export function PageHeader({
       >
         <PanelLeftIcon />
       </Drawer.Trigger>
-      <div className="flex min-w-0 items-center gap-2 px-1.5 text-[13.5px] text-muted-foreground">
+      <div className="flex min-w-0 items-center gap-2 px-1 text-[13.5px] text-muted-foreground md:px-0">
         {title}
       </div>
       {actions && (

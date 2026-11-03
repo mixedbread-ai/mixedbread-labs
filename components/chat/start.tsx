@@ -1,7 +1,9 @@
 "use client";
 
+import { cn } from "cn";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PRIMARY } from "@/components/controls";
 import { DropCard, FileRow, StartLayout } from "@/components/drop-card";
 import { PageHeader } from "@/components/shell/shell";
 import { CHAT_ACCEPT, MAX_CHAT_FILES, type UploadedFile } from "@/lib/files";
@@ -76,24 +78,14 @@ export function ChatStart() {
       <PageHeader title="New chat" />
       <StartLayout
         title="What do you want to ask?"
-        description="Upload files to search and chat with. Answers cite the page they come from, and anyone with the link can ask too."
+        description="Add files to search and chat with. Answers cite the page they come from, and anyone with the link can ask too."
       >
         <DropCard
           multiple
           accept={CHAT_ACCEPT}
-          hint={`Up to ${MAX_CHAT_FILES} documents, slides, images or text files`}
+          hint={`Up to ${MAX_CHAT_FILES} documents, images or text files`}
+          disabled={submitting || picked.length >= MAX_CHAT_FILES}
           onFiles={pick}
-          bar={
-            picked.length > 0 && (
-              <span className="px-1.5 text-[13px] text-muted-foreground tabular-nums">
-                {picked.length} of {MAX_CHAT_FILES}
-              </span>
-            )
-          }
-          ready={uploaded.length > 0 && !waiting}
-          busy={submitting}
-          action="Create chat"
-          onSubmit={() => void start()}
         >
           {picked.length > 0 &&
             picked.map((item) => (
@@ -114,10 +106,29 @@ export function ChatStart() {
               />
             ))}
         </DropCard>
-        {error && (
-          <p className="mt-3 text-center text-[13px] text-destructive motion-safe:animate-swap-in">
-            {error}
-          </p>
+        {picked.length > 0 && (
+          <div className="flex items-center gap-3 px-2">
+            <p
+              key={error}
+              className={cn(
+                "min-w-0 flex-1 text-[13px] motion-safe:animate-swap-in",
+                error ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              {error ??
+                (waiting
+                  ? "Uploading…"
+                  : `${uploaded.length} of ${MAX_CHAT_FILES} files`)}
+            </p>
+            <button
+              type="button"
+              disabled={uploaded.length === 0 || waiting || submitting}
+              onClick={() => void start()}
+              className={PRIMARY}
+            >
+              {submitting ? "Creating…" : "Create chat"}
+            </button>
+          </div>
         )}
       </StartLayout>
     </>

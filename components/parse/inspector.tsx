@@ -259,7 +259,7 @@ const Row = memo(function Row({
         onPointerLeave={() => onHover(null)}
         onClick={() => onSelect(element.id, "list")}
         style={{ "--c": typeColor(element.type) } as CSSProperties}
-        className="grid w-full grid-cols-[6.5rem_minmax(0,1fr)_1.75rem] items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-[background-color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring not-hover:data-active:bg-[oklch(from_var(--foreground)_l_c_h/0.055)] data-selected:bg-(--c)/12"
+        className="grid w-full grid-cols-[6.5rem_minmax(0,1fr)_1.75rem] items-center gap-3 rounded-lg px-2.5 py-1.5 text-left transition-[background-color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring not-hover:data-active:bg-[oklch(from_var(--foreground)_l_c_h/0.055)] data-selected:bg-(--c)/12"
       >
         <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           <span className="size-2 shrink-0 rounded-[2px] bg-(--c)" />
@@ -297,7 +297,7 @@ function Detail({
       style={{ "--c": typeColor(element.type) } as CSSProperties}
       className="flex max-h-[55%] shrink-0 flex-col overflow-hidden rounded-xl bg-card shadow-raised ring-1 ring-soft motion-safe:animate-rise"
     >
-      <div className="flex h-10 shrink-0 items-center gap-2 pr-1 pl-3">
+      <div className="flex h-10 shrink-0 items-center gap-2 pr-1 pl-2.5">
         <span className="size-2 rounded-[2px] bg-(--c)" />
         <span className="text-[13px] font-medium">
           {typeOf(element.type).label}
@@ -326,7 +326,7 @@ function Detail({
           </button>
         </span>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2.5 pb-3">
         {element.image && (
           <img
             src={`data:image/png;base64,${element.image}`}
