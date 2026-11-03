@@ -144,8 +144,9 @@ export function FileRow({
     <li className="relative flex h-11 items-center gap-2.5 overflow-hidden rounded-xl bg-muted/60 pr-1.5 pl-3 text-[13.5px] motion-safe:animate-rise dark:bg-muted/40">
       <FileIcon className="size-4 shrink-0 text-muted-foreground" />
       <span className="min-w-0 flex-1 truncate">{name}</span>
+      {/* Slides in when the phase changes; the percentage counts up in place */}
       <span
-        key={note}
+        key={error ? "error" : done ? "done" : "uploading"}
         title={error}
         className={cn(
           "max-w-[45%] shrink-0 truncate text-xs tabular-nums motion-safe:animate-swap-in",
