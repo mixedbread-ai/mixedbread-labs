@@ -7,7 +7,7 @@ Try Mixedbread without signing up. Every result is a link anyone can open.
 
 The sidebar lists the parses and chats this browser opened; there are no accounts.
 
-Files go from the browser straight to storage through presigned upload links, so none passes through the app's functions.
+Uploads go from the browser straight to storage through presigned links, so no upload passes through the app's functions.
 
 ## Run it
 
@@ -21,4 +21,4 @@ Set `MXBAI_API_KEY` and `AI_GATEWAY_API_KEY` in `.env.local`, then open http://l
 
 ## Deploy
 
-On Vercel, set `MXBAI_API_KEY`; the AI Gateway authenticates through the deployment's OIDC token. The key should belong to an organization used only by Labs: every store and parsing job it can reach is open to anyone with its link. `vercel.json` keeps the functions in `iad1`, next to the API, and BotID guards the API routes.
+On Vercel, set `MXBAI_API_KEY`; the AI Gateway authenticates through the deployment's OIDC token. The key should belong to an organization used only by Labs: every store and parsing job it can reach is open to anyone with its link. `vercel.json` keeps the functions in `iad1`, next to the API, and BotID guards the routes the page calls (not file and page image loads, which can't carry its headers).

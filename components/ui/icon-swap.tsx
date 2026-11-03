@@ -13,15 +13,14 @@ interface IconSwapProps {
   state: "a" | "b";
   a: React.ReactNode;
   b: React.ReactNode;
-  className?: string;
 }
 
-export function IconSwap({ state, a, b, className }: IconSwapProps) {
+export function IconSwap({ state, a, b }: IconSwapProps) {
   return (
     <span
       data-slot="icon-swap"
       data-state={state}
-      className={cn("grid place-items-center", className)}
+      className="grid place-items-center"
     >
       <span className={slot(state === "a")}>{a}</span>
       <span className={slot(state === "b")}>{b}</span>

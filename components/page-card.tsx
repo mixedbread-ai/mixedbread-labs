@@ -19,6 +19,7 @@ import {
   type DocSegment,
   pageLabel,
 } from "@/lib/chat";
+import { scrollToView } from "@/lib/motion";
 import { plainText } from "@/lib/text";
 import { PageFrame } from "./cited-page";
 import { FOCUS, FOLD, Reveal } from "./controls";
@@ -208,11 +209,7 @@ function showFirstMark(element: HTMLDivElement) {
   const observer = new ResizeObserver(() => {
     if (element.childElementCount === 0) return;
     observer.disconnect();
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    element.scrollIntoView({
-      block: "start",
-      behavior: reduced ? "instant" : "smooth",
-    });
+    scrollToView(element, "start");
   });
   observer.observe(element);
   return () => observer.disconnect();

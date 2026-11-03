@@ -5,8 +5,8 @@ import { useState } from "react";
 import { DropCard, FileRow, StartLayout } from "@/components/drop-card";
 import { PageHeader } from "@/components/shell/shell";
 import { PARSE_ACCEPT, type UploadedFile } from "@/lib/files";
-import { DEFAULT_OPTIONS, jobHref, type ParseOptions } from "@/lib/parse";
-import { postJson } from "@/lib/request";
+import { DEFAULT_OPTIONS, type ParseOptions, startParse } from "@/lib/parse";
+import { errorMessage } from "@/lib/request";
 import { uploadFile } from "@/lib/upload";
 import { OptionsForm } from "./options";
 
@@ -30,13 +30,9 @@ export function ParseStart() {
           current?.file === file ? { ...current, progress } : current
         )
       );
-      const job = await postJson<{ id: string }>("/api/parse", {
-        file_id: uploaded.id,
-        ...options,
-      });
-      router.push(jobHref(job.id, options.mode));
+      router.push(await startParse(uploaded.id, options));
     } catch (reason) {
-      const error = reason instanceof Error ? reason.message : String(reason);
+      const error = errorMessage(reason);
       setPicked((current) =>
         current?.file === file ? { ...current, error } : current
       );

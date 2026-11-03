@@ -89,7 +89,7 @@ function termsOf(text: string): Set<string> {
   return terms;
 }
 
-/** A figure, unlike a year or a day of the month, ties a claim to one block */
+/** A figure, unlike a year or a day of the month, ties a query to one block */
 function isFigure(term: string): boolean {
   return (
     /\d/.test(term) &&
@@ -98,13 +98,13 @@ function isFigure(term: string): boolean {
 }
 
 /**
- * The blocks a claim stands on, found as Mixedbread Chat finds them: every
- * block that shares half the claim's terms, or else the closest one if it
- * shares a quarter. On a page that holds one of the claim's figures, only the
- * blocks holding one count.
+ * The blocks a search's words are in, found as Mixedbread Chat finds them:
+ * every block that shares half the query's terms, or else the closest one if
+ * it shares a quarter. On a page that holds one of the query's figures, only
+ * the blocks holding one count.
  */
-export function evidenceFor(claim: string, layout: Layout): Element[] {
-  const terms = termsOf(claim);
+export function evidenceFor(query: string, layout: Layout): Element[] {
+  const terms = termsOf(query);
   const blocks = layout.elements
     .filter(isContent)
     .map((element) => ({ element, found: termsOf(element.text ?? "") }));

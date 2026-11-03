@@ -25,6 +25,8 @@ import {
   type DocCitedPage,
   type DocSource,
 } from "@/lib/chat";
+import { scrollToView } from "@/lib/motion";
+import { plural } from "@/lib/text";
 import { SourceCards, sourceCard } from "./cited-page";
 import { BADGE, COLUMN, Failure, FOCUS, Reveal, ToastMark } from "./controls";
 import { COMPONENTS, Markdown } from "./markdown";
@@ -165,12 +167,8 @@ function Answer({ message, live }: { message: DocChatMessage; live: boolean }) {
     setHighlighted(n);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setHighlighted(null), HIGHLIGHT_MS);
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     requestAnimationFrame(() =>
-      document.getElementById(cardId(n))?.scrollIntoView({
-        block: "start",
-        behavior: reduced ? "instant" : "smooth",
-      })
+      scrollToView(document.getElementById(cardId(n)), "start")
     );
   }
 
@@ -232,10 +230,6 @@ function Waiting({ label }: { label: string }) {
       </span>
     </div>
   );
-}
-
-function plural(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 function quoted(terms: string[]): string {

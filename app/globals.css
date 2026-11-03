@@ -7,7 +7,6 @@
   /* Lightness of the element type colors in parse results */
   --type-l: 0.6;
   --logo-orange: oklch(0.64 0.2 39);
-  --logo-orange-accent: oklch(0.6 0.18 39);
 
   /* The page, which the sidebar sits on, and the panel that holds each tool */
   --background: oklch(0.975 0.002 286);
@@ -32,7 +31,6 @@
 }
 
 .dark {
-  --logo-orange-accent: oklch(0.45 0.13 39);
   --type-l: 0.72;
 
   --background: oklch(0 0 0);
@@ -67,7 +65,6 @@
   --radius-2xl: calc(var(--radius) + 8px);
 
   --color-logo: var(--logo-orange);
-  --color-logo-accent: var(--logo-orange-accent);
 
   --color-background: var(--background);
   --color-panel: var(--panel);

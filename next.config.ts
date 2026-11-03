@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
     staleTimes: { dynamic: 300 },
   },
   // Page images are full-size scans, which next/image resizes to where they
-  // show. They come from /api/pages, whose addresses never change what they
+  // show. They come from /api/chats/[store]/pages, whose addresses never change what they
   // point to, so a resized page keeps for as long as the cache allows.
   images: {
     minimumCacheTTL: 31_536_000,

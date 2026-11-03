@@ -4,13 +4,14 @@ import { Popover } from "@base-ui/react/popover";
 import { cn } from "cn";
 import { ChevronDownIcon, FileIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PICKER, POPUP, ToastMark } from "@/components/controls";
+import { HEADLINE, PICKER, POPUP, ToastMark } from "@/components/controls";
 import { Playground } from "@/components/playground";
 import { ShareButton } from "@/components/share-button";
 import { PageHeader } from "@/components/shell/shell";
 import { CHAT_MODEL_NAME, type ChatFile, isIndexing } from "@/lib/chat";
 import { useRemember } from "@/lib/history";
 import { request } from "@/lib/request";
+import { plural } from "@/lib/text";
 
 const POLL_MS = 2000;
 
@@ -42,7 +43,7 @@ export function ChatRoom({
     kind: "chat",
     href: `/chat/${store}`,
     title,
-    detail: `${files.length} file${files.length === 1 ? "" : "s"}`,
+    detail: plural(files.length, "file"),
   });
 
   useEffect(() => {
@@ -73,9 +74,7 @@ export function ChatRoom({
           indexing && !ready ? (
             <>
               <ToastMark live />
-              <h2 className="text-[1.75rem] leading-[1.1] font-normal tracking-[-0.025em] text-balance sm:text-[2.25rem]">
-                Reading your files
-              </h2>
+              <h2 className={HEADLINE}>Reading your files</h2>
               <p className="max-w-md text-sm leading-6 text-balance text-muted-foreground">
                 Mixedbread is parsing and indexing them. You can ask as soon as
                 one is ready.
@@ -84,7 +83,7 @@ export function ChatRoom({
             </>
           ) : (
             <>
-              <h2 className="text-[1.75rem] leading-[1.1] font-normal tracking-[-0.025em] text-balance motion-safe:animate-rise sm:text-[2.25rem]">
+              <h2 className={cn(HEADLINE, "motion-safe:animate-rise")}>
                 What do you want to know?
               </h2>
               <p className="max-w-md text-sm leading-6 text-balance text-muted-foreground">
@@ -108,7 +107,7 @@ function FilesPopover({ files }: { files: ChatFile[] }) {
     <Popover.Root>
       <Popover.Trigger className={cn(PICKER, "max-sm:hidden")}>
         <StatusDot status={working ? "in_progress" : "completed"} />
-        {files.length} file{files.length === 1 ? "" : "s"}
+        {plural(files.length, "file")}
         <ChevronDownIcon className="opacity-60" />
       </Popover.Trigger>
       <Popover.Portal>

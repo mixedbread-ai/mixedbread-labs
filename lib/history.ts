@@ -52,7 +52,6 @@ function subscribe(listener: () => void) {
   };
 }
 
-/** Puts an entry first, replacing an earlier visit to the same link */
 /**
  * Adds a new entry on top. One already listed keeps its place, so the list
  * doesn't move under the pointer that just opened it.

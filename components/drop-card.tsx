@@ -4,7 +4,7 @@ import { cn } from "cn";
 import { FileIcon, PlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import { formatBytes, MAX_FILE_BYTES } from "@/lib/files";
-import { FOCUS } from "./controls";
+import { FOCUS, HEADLINE } from "./controls";
 
 /**
  * A raised card that takes files by drop or by browsing. Empty, the whole card
@@ -188,9 +188,7 @@ export function StartLayout({
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <div className="mx-auto my-auto flex w-full max-w-xl flex-col items-center gap-8 px-4 py-10">
         <div className="flex flex-col items-center gap-3 text-center">
-          <h1 className="text-[1.75rem] leading-[1.1] font-normal tracking-[-0.025em] text-balance motion-safe:animate-rise sm:text-[2.25rem]">
-            {title}
-          </h1>
+          <h1 className={cn(HEADLINE, "motion-safe:animate-rise")}>{title}</h1>
           <p
             className="max-w-md text-sm leading-6 text-balance text-muted-foreground motion-safe:animate-rise"
             style={{ animationDelay: "60ms" }}

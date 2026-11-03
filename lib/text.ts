@@ -8,3 +8,7 @@ export function plainText(markdown: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+export function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}

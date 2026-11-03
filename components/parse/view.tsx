@@ -15,6 +15,7 @@ import { BUTTON, POPUP, PRIMARY, Segmented } from "@/components/controls";
 import { ShareButton } from "@/components/share-button";
 import { PageHeader } from "@/components/shell/shell";
 import { useRemember } from "@/lib/history";
+import { scrollToView } from "@/lib/motion";
 import {
   DEFAULT_OPTIONS,
   FORMATS,
@@ -24,8 +25,10 @@ import {
   type ParseMode,
   type ParseOptions,
   pagesOf,
+  startParse,
 } from "@/lib/parse";
-import { postJson } from "@/lib/request";
+import { errorMessage } from "@/lib/request";
+import { plural } from "@/lib/text";
 import type { Selection } from "./document";
 import { Detail, Inspector, type InspectorTab } from "./inspector";
 import { OptionsForm } from "./options";
@@ -38,10 +41,6 @@ function kindOf(filename: string): "pdf" | "image" | "none" {
   if (extension === "pdf") return "pdf";
   if (["png", "jpg", "jpeg", "webp", "gif"].includes(extension)) return "image";
   return "none";
-}
-
-function plural(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 /** A finished parse: the pages with their elements boxed beside what the parser read */
@@ -75,8 +74,8 @@ export function ParseView({
   // Selecting on one side brings the element into view on the other, where
   // that side shows; a phone stays on its view and opens the element's card
   const select = useCallback((id: string, from: "page" | "list") => {
-    setSelected(id || null);
-    if (id) reveal(from === "page" ? `row-${id}` : `box-${id}`);
+    setSelected(id);
+    reveal(from === "page" ? `row-${id}` : `box-${id}`);
   }, []);
 
   const selection = useMemo<Selection>(
@@ -208,12 +207,7 @@ const VIEWS: { value: "document" | InspectorTab; label: string }[] = [
 /** Scrolls an element into the middle of its view, after the render that shows it */
 function reveal(id: string) {
   requestAnimationFrame(() =>
-    document.getElementById(id)?.scrollIntoView({
-      block: "center",
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "instant"
-        : "smooth",
-    })
+    scrollToView(document.getElementById(id), "center")
   );
 }
 
@@ -249,13 +243,9 @@ function Reparse({
     setSubmitting(true);
     setError(undefined);
     try {
-      const job = await postJson<{ id: string }>("/api/parse", {
-        file_id: fileId,
-        ...options,
-      });
-      router.push(jobHref(job.id, options.mode));
+      router.push(await startParse(fileId, options));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
+      setError(errorMessage(reason));
       setSubmitting(false);
     }
   }

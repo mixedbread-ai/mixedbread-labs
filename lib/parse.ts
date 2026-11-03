@@ -4,6 +4,7 @@ import type {
   ParsingJob,
   ReturnFormat,
 } from "@mixedbread/sdk/resources/parsing/jobs";
+import { postJson } from "./request";
 import { plainText } from "./text";
 
 export type ParseMode = "fast" | "high_quality";
@@ -63,9 +64,9 @@ export function typeOf(type: ElementType) {
 }
 
 /** The CSS color of a type, at the lightness the theme asks of it */
-export function typeColor(type: ElementType, alpha = 1): string {
+export function typeColor(type: ElementType): string {
   const { hue, chroma } = typeOf(type);
-  return `oklch(var(--type-l) ${chroma} ${hue} / ${alpha})`;
+  return `oklch(var(--type-l) ${chroma} ${hue})`;
 }
 
 /** A job's link, carrying the mode it ran in, which the API doesn't return */
@@ -147,4 +148,16 @@ function withoutMath(text: string): string {
     .replace(/\\[a-zA-Z]+\{([^{}]*)\}/g, "$1")
     .replace(/\\[a-zA-Z]+/g, "")
     .replace(/[$^_{}]/g, "");
+}
+
+/** Starts parsing an uploaded file, resolving to the result's link */
+export async function startParse(
+  fileId: string,
+  options: ParseOptions
+): Promise<string> {
+  const job = await postJson<{ id: string }>("/api/parse", {
+    file_id: fileId,
+    ...options,
+  });
+  return jobHref(job.id, options.mode);
 }

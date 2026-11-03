@@ -70,8 +70,6 @@ export interface DocSource {
   page: number | null;
   /** The cited blocks as plain text */
   preview: string;
-  /** The sentence that cites them */
-  claim: string;
   /** The page with the cited blocks boxed */
   view: DocPageView | null;
 }

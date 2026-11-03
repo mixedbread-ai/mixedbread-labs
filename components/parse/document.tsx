@@ -8,6 +8,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import { type CSSProperties, memo, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { GHOST_ICON } from "@/components/controls";
+import { scrollToView } from "@/lib/motion";
 import {
   type ParsedElement,
   type ParsedPage,
@@ -63,12 +64,7 @@ export default function DocumentPages({
   const blank = kind === "none" || failed;
 
   function go(page: number) {
-    document.getElementById(`page-${page}`)?.scrollIntoView({
-      block: "start",
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "instant"
-        : "smooth",
-    });
+    scrollToView(document.getElementById(`page-${page}`), "start");
   }
 
   // The page under the top third of the view, read once a frame at most

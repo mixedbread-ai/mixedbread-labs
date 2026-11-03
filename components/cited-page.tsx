@@ -20,17 +20,15 @@ import { BADGE } from "./controls";
 /** One card previews whichever source is hovered, so two never open at once */
 export const sourceCard = createHoverCardHandle<DocSource>();
 
-/** The page with its claim's blocks boxed, the boxes showing once the image is in; a soft pulse holds its place until then */
+/** The page with its cited blocks boxed, the boxes showing once the image is in; a soft pulse holds its place until then */
 function PageImage({
   view,
   label,
-  large = false,
-  sizes = large ? "(min-width: 44rem) 42rem, 100vw" : "5.25rem",
+  sizes,
 }: {
   view: DocPageView;
   label: string;
-  large?: boolean;
-  sizes?: string;
+  sizes: string;
 }) {
   const [loaded, setLoaded] = useState(false);
 
@@ -65,12 +63,7 @@ function PageImage({
               width: `${mark.width * 100}%`,
               height: `${mark.height * 100}%`,
             }}
-            className={cn(
-              "absolute rounded-[2px] bg-logo/12 motion-safe:animate-swap-in",
-              large
-                ? "outline-2 outline-offset-2 outline-logo/80"
-                : "outline-1 outline-offset-1 outline-logo/85"
-            )}
+            className="absolute rounded-[2px] bg-logo/12 outline-2 outline-offset-2 outline-logo/80 motion-safe:animate-swap-in"
           />
         ))}
     </div>
@@ -167,7 +160,6 @@ export function PageFrame({
           <PageImage
             view={view}
             label={label}
-            large
             sizes={`(min-width: 48rem) ${Math.ceil(42 / crop.width)}rem, ${Math.ceil(100 / crop.width)}vw`}
           />
         </div>

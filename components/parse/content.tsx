@@ -4,7 +4,6 @@ import "katex/dist/katex.min.css";
 
 import type { ReturnFormat } from "@mixedbread/sdk/resources/parsing/jobs";
 import { createMathPlugin } from "@streamdown/math";
-import { cn } from "cn";
 import { memo, useMemo } from "react";
 import { Streamdown } from "streamdown";
 import { COMPONENTS } from "@/components/markdown";
@@ -20,11 +19,9 @@ const plugins = { math: createMathPlugin({ singleDollarTextMath: true }) };
 export const ParsedContent = memo(function ParsedContent({
   content,
   format,
-  className,
 }: {
   content: string;
   format: Exclude<ReturnFormat, "plain">;
-  className?: string;
 }) {
   const source = useMemo(
     () => (format === "markdown" ? prepareMarkdown(content) : content),
@@ -38,12 +35,9 @@ export const ParsedContent = memo(function ParsedContent({
       components={COMPONENTS}
       parseIncompleteMarkdown={false}
       controls={false}
-      className={cn(
-        // Cell text comes wrapped in paragraphs, which the cell spaces
-        // itself; an equation wider than the pane scrolls on its own
-        "text-sm leading-6 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-1 [&_:is(td,th)>p]:mb-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className
-      )}
+      // Cell text comes wrapped in paragraphs, which the cell spaces itself;
+      // an equation wider than the pane scrolls on its own
+      className="text-sm leading-6 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-1 [&_:is(td,th)>p]:mb-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
     >
       {source}
     </Streamdown>

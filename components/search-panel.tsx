@@ -3,6 +3,7 @@
 import { cn } from "cn";
 import { useRef, useState } from "react";
 import type { DocHit, DocSearchResponse } from "@/lib/chat";
+import { request } from "@/lib/request";
 import { COLUMN, Failure } from "./controls";
 import { PageCard } from "./page-card";
 
@@ -20,22 +21,20 @@ export function useSearch(store: string) {
   const [result, setResult] = useState<Result | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [query, setQuery] = useState("");
-  const request = useRef<AbortController | null>(null);
+  const inFlight = useRef<AbortController | null>(null);
 
   async function run(text: string) {
-    request.current?.abort();
+    inFlight.current?.abort();
     const controller = new AbortController();
-    request.current = controller;
+    inFlight.current = controller;
     setQuery(text);
     setStatus("loading");
 
     try {
-      const response = await fetch(
+      const data = await request<DocSearchResponse>(
         `/api/chats/${store}/search?${new URLSearchParams({ query: text })}`,
         { signal: controller.signal }
       );
-      if (!response.ok) throw new Error(`Search failed: ${response.status}`);
-      const data: DocSearchResponse = await response.json();
       setResult((previous) => ({
         id: (previous?.id ?? 0) + 1,
         response: data,

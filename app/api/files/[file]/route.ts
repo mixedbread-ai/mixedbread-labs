@@ -26,7 +26,6 @@ export async function GET(
     headers: {
       "Content-Type": info.mime_type,
       "Content-Length": String(info.bytes),
-      // A file id never changes what it holds, so the CDN keeps it too
       "Cache-Control": "public, max-age=31536000, s-maxage=31536000, immutable",
     },
   });

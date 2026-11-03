@@ -4,8 +4,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 /**
- * Every route spends the Labs key, so each turns bots away first. The check
- * level must match `instrumentation-client.ts` or verification fails.
+ * Every route the page calls spends the Labs key, so each turns bots away
+ * first. Files and page images can't be checked: the PDF viewer and image
+ * tags load them without BotID's headers. The check level must match
+ * `instrumentation-client.ts` or verification fails.
  */
 export async function rejectBots(): Promise<NextResponse | null> {
   const { isBot } = await checkBotId({

@@ -131,7 +131,7 @@ function TypesValue({ types }: { types: ElementType[] }) {
   );
 }
 
-/** The parse job's options as labeled selects, set before a file goes up */
+/** The parse job's options as labeled selects */
 export function OptionsForm({
   options,
   onChange,

@@ -37,6 +37,7 @@ import {
 } from "@/components/controls";
 import { HoverArea } from "@/components/ui/hover-area";
 import { IconSwap } from "@/components/ui/icon-swap";
+import { useCopy } from "@/lib/clipboard";
 import {
   ELEMENT_TYPES,
   type ParsedElement,
@@ -400,17 +401,12 @@ export function Detail({
 }
 
 function CopyButton({ text, label }: { text: () => string; label?: string }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, copy] = useCopy();
 
   return (
     <button
       type="button"
-      onClick={() => {
-        void navigator.clipboard.writeText(text()).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        });
-      }}
+      onClick={() => copy(text())}
       className={label ? GHOST : cn(GHOST_ICON, "size-7")}
     >
       <IconSwap

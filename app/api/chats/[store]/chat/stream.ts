@@ -15,10 +15,8 @@ import type { SearchOutput } from "./tools";
 type Chunk = InferUIMessageChunk<DocChatMessage>;
 
 const SOURCE_PREVIEW_LENGTH = 400;
-// How far back from a citation the sentence it stands for may start
-const CLAIM_LENGTH = 400;
 
-// Mixedbread's citation grammar, as its Question Answering writes it:
+// The citation grammar the system prompt teaches:
 // `<cite i="c3" e="4"/>` cites element 4 of chunk c3's page layout, and
 // `<cite i="c3"/>` the chunk as a whole. A run of tags is one citation.
 const MARKER = /<cite\b[^>]*\/>(?:\s*<cite\b[^>]*\/>)*/g;
@@ -129,15 +127,12 @@ export function blockCitations(
   const numbers = new Map<string, number>();
   // Every block cited in each passage, for its entry among the sources
   const cited = new Map<string, Set<number>>();
-  // Per text part: what streamed in but may be the start of a marker, and
-  // the answer so far without its markers, to find what a citation stands for
+  // Per text part: what streamed in but may be the start of a marker
   const held = new Map<string, string>();
-  const written = new Map<string, string[]>();
 
   function cite(
     controller: TransformStreamDefaultController<Chunk>,
-    marker: string,
-    claim: string
+    marker: string
   ): string {
     // A run of tags may cite several passages: a link for each, in order
     const byHandle = new Map<string, number[]>();
@@ -164,7 +159,7 @@ export function blockCitations(
         indices.length > 0 ? `${handle}.${indices.join("_")}` : handle;
       let source = sources.get(key);
       if (!source) {
-        source = toSource(passage, handle, key, indices, claim);
+        source = toSource(passage, handle, key, indices);
         sources.set(key, source);
         controller.enqueue({ type: "data-source", id: key, data: source });
         const all = cited.get(handle) ?? new Set();
@@ -199,8 +194,7 @@ export function blockCitations(
     passage: Passage,
     handle: string,
     key: string,
-    indices: number[],
-    claim: string
+    indices: number[]
   ): DocSource {
     const n = numbers.get(handle) ?? numbers.size + 1;
     numbers.set(handle, n);
@@ -217,7 +211,6 @@ export function blockCitations(
       file: passage.file,
       page: passage.page,
       preview: plainText(text).slice(0, SOURCE_PREVIEW_LENGTH),
-      claim,
       view: passage.layout
         ? viewOf(store, passage, passage.layout, elements)
         : null,
@@ -247,19 +240,13 @@ export function blockCitations(
     held.set(id, all.slice(cut));
     const text = all.slice(0, cut);
 
-    const so = written.get(id) ?? [];
     let delta = "";
     let from = 0;
     for (const match of text.matchAll(MARKER)) {
-      const before = text.slice(from, match.index);
-      so.push(...before);
-      delta += before + cite(controller, match[0], claimAt(so));
+      delta += text.slice(from, match.index) + cite(controller, match[0]);
       from = match.index + match[0].length;
     }
-    const rest = text.slice(from);
-    so.push(...rest);
-    written.set(id, so);
-    delta += rest;
+    delta += text.slice(from);
     if (delta) controller.enqueue({ type: "text-delta", id, delta });
   }
 
@@ -274,30 +261,4 @@ export function blockCitations(
       controller.enqueue(chunk);
     },
   });
-}
-
-/**
- * The sentence that ends where a citation stands, in code points so an emoji
- * can't shift it
- */
-function claimAt(chars: string[]): string {
-  let end = chars.length;
-  while (end > 0 && /[\s.!?]/.test(chars[end - 1] ?? "")) end--;
-  let start = end;
-  while (
-    start > 0 &&
-    start > end - CLAIM_LENGTH &&
-    !endsSentence(chars, start)
-  ) {
-    start--;
-  }
-  return chars.slice(start, end).join("").replace(/\*\*/g, "").trim();
-}
-
-// A full stop ends a sentence only before a space, so "$16.3 billion" stays whole
-function endsSentence(chars: string[], at: number): boolean {
-  const before = chars[at - 1] ?? "";
-  return (
-    /[!?\n]/.test(before) || (before === "." && /\s/.test(chars[at] ?? ""))
-  );
 }

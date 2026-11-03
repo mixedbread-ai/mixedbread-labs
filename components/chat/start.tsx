@@ -7,7 +7,7 @@ import { PRIMARY } from "@/components/controls";
 import { DropCard, FileRow, StartLayout } from "@/components/drop-card";
 import { PageHeader } from "@/components/shell/shell";
 import { CHAT_ACCEPT, MAX_CHAT_FILES, type UploadedFile } from "@/lib/files";
-import { postJson } from "@/lib/request";
+import { errorMessage, postJson } from "@/lib/request";
 import { uploadFile } from "@/lib/upload";
 
 interface Picked {
@@ -68,7 +68,7 @@ export function ChatStart() {
       });
       router.push(`/chat/${chat.id}`);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
+      setError(errorMessage(reason));
       setSubmitting(false);
     }
   }

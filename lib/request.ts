@@ -19,3 +19,8 @@ export function postJson<T>(url: string, body: object): Promise<T> {
     body: JSON.stringify(body),
   });
 }
+
+/** What a caught error says, for the message under a form */
+export function errorMessage(reason: unknown): string {
+  return reason instanceof Error ? reason.message : String(reason);
+}
