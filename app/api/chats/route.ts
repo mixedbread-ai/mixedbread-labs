@@ -25,6 +25,9 @@ export async function POST(req: Request) {
   const { files } = body.data;
   try {
     const store = await getMixedbreadClient().stores.create({
+      // The API takes a store without a name but can't save one: it answers
+      // 500. Names are unique in the organization, so each chat gets its own.
+      name: `chat-${crypto.randomUUID()}`,
       description: files.map(({ filename }) => filename).join(", "),
       expires_after: { anchor: "last_active_at", days: EXPIRES_AFTER_DAYS },
       file_ids: files.map(({ id }) => id),
