@@ -5,6 +5,7 @@ export function Bone({ className }: { className?: string }) {
   return (
     <span
       aria-hidden="true"
+      data-bone=""
       className={cn(
         "block rounded-md bg-soft motion-safe:animate-pulse",
         className

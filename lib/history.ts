@@ -6,7 +6,6 @@ export interface HistoryEntry {
   href: string;
   title: string;
   detail: string;
-  at: number;
 }
 
 // Checked by hand rather than with a schema library, which would ship on every page
@@ -17,8 +16,7 @@ function isEntry(value: unknown): value is HistoryEntry {
     (entry.kind === "parse" || entry.kind === "chat") &&
     typeof entry.href === "string" &&
     typeof entry.title === "string" &&
-    typeof entry.detail === "string" &&
-    typeof entry.at === "number"
+    typeof entry.detail === "string"
   );
 }
 
@@ -55,13 +53,17 @@ function subscribe(listener: () => void) {
 }
 
 /** Puts an entry first, replacing an earlier visit to the same link */
-function remember(entry: Omit<HistoryEntry, "at">) {
-  const next = [{ ...entry, at: Date.now() }];
-  for (const known of read()) {
-    if (known.href !== entry.href && next.length < MAX_ENTRIES) {
-      next.push(known);
-    }
-  }
+/**
+ * Adds a new entry on top. One already listed keeps its place, so the list
+ * doesn't move under the pointer that just opened it.
+ */
+function remember(entry: HistoryEntry) {
+  const entries = read();
+  const known = entries.find(({ href }) => href === entry.href);
+  if (known?.title === entry.title && known.detail === entry.detail) return;
+  const next = known
+    ? entries.map((item) => (item === known ? entry : item))
+    : [entry, ...entries].slice(0, MAX_ENTRIES);
   cache = next;
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
@@ -72,7 +74,7 @@ function remember(entry: Omit<HistoryEntry, "at">) {
 }
 
 /** Records this page in the history once its title is known */
-export function useRemember(entry: Omit<HistoryEntry, "at">) {
+export function useRemember(entry: HistoryEntry) {
   const { kind, href, title, detail } = entry;
   useEffect(() => {
     remember({ kind, href, title, detail });
