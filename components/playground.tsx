@@ -113,7 +113,7 @@ export function Playground({
         // Back to typing, except on touch, where focus opens the keyboard
         if (matchMedia("(pointer: fine)").matches) input.current?.focus();
       }}
-      className="flex h-full w-full flex-col gap-3 pt-4 pb-4 md:pb-6"
+      className="flex min-h-0 w-full flex-1 flex-col gap-3 pb-3 md:pb-4"
     >
       {/* One column the width of the screen: an auto column grows to the
           widest unwrapped line inside, such as a truncated step */}

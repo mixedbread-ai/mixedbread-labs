@@ -1,15 +1,14 @@
 "use client";
 
-import { ArrowRightIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { PRIMARY } from "@/components/controls";
-import { Dropzone, UploadRow } from "@/components/dropzone";
+import { DropCard, FileRow, StartLayout } from "@/components/drop-card";
+import { PageHeader } from "@/components/shell/shell";
 import { PARSE_ACCEPT, type UploadedFile } from "@/lib/files";
 import { DEFAULT_OPTIONS, jobHref, type ParseOptions } from "@/lib/parse";
 import { postJson } from "@/lib/request";
 import { uploadFile } from "@/lib/upload";
-import { OptionsForm } from "./options";
+import { OptionsBar } from "./options";
 
 interface Picked {
   file: File;
@@ -60,24 +59,24 @@ export function ParseStart() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="mx-auto my-auto flex w-full max-w-xl flex-col gap-8 px-4 py-10 sm:px-6">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <p className="text-[13px] font-medium text-orange-700 dark:text-logo">
-            Document parsing
-          </p>
-          <h1 className="text-2xl font-normal tracking-tight text-balance md:text-[2rem] md:leading-[1.15]">
-            See what our parser reads.
-          </h1>
-          <p className="max-w-md text-sm leading-6 text-balance text-muted-foreground">
-            Upload a document and inspect every title, table and figure it
-            finds, boxed on the page. Each result is a link you can share.
-          </p>
-        </div>
-
-        {picked ? (
-          <ul>
-            <UploadRow
+    <>
+      <PageHeader title="Parse" />
+      <StartLayout
+        title="What should we parse?"
+        description="See every element the parser finds, boxed on its page. Each result is a link you can share."
+      >
+        <DropCard
+          accept={PARSE_ACCEPT}
+          hint="PDF, Word, slides or an image"
+          onFiles={([file]) => file && pick(file)}
+          bar={<OptionsBar options={options} onChange={setOptions} />}
+          ready={!!picked && !picked.error}
+          busy={submitting}
+          action="Parse"
+          onSubmit={() => void parse()}
+        >
+          {picked && (
+            <FileRow
               name={picked.file.name}
               size={picked.file.size}
               progress={picked.progress}
@@ -91,35 +90,14 @@ export function ParseStart() {
                     }
               }
             />
-          </ul>
-        ) : (
-          <Dropzone
-            accept={PARSE_ACCEPT}
-            title="Drop a document, or browse"
-            hint="PDF, Word, slides or an image"
-            onFiles={([file]) => file && pick(file)}
-          />
-        )}
-
-        <OptionsForm options={options} onChange={setOptions} />
-
-        <div className="flex items-center justify-end gap-3">
-          {error && (
-            <p className="text-[13px] text-destructive motion-safe:animate-swap-in">
-              {error}
-            </p>
           )}
-          <button
-            type="button"
-            disabled={!picked || !!picked.error || submitting}
-            onClick={() => void parse()}
-            className={PRIMARY}
-          >
-            {submitting ? "Starting" : "Parse"}
-            <ArrowRightIcon className="size-3.5" />
-          </button>
-        </div>
-      </div>
-    </div>
+        </DropCard>
+        {error && (
+          <p className="mt-3 text-center text-[13px] text-destructive motion-safe:animate-swap-in">
+            {error}
+          </p>
+        )}
+      </StartLayout>
+    </>
   );
 }

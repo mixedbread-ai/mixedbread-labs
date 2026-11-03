@@ -18,8 +18,8 @@ import {
   type DocPageView,
   type DocSegment,
   pageLabel,
-  plainText,
 } from "@/lib/chat";
+import { plainText } from "@/lib/text";
 import { PageFrame } from "./cited-page";
 import { FOCUS, FOLD, Reveal } from "./controls";
 import { COMPONENTS, Markdown } from "./markdown";

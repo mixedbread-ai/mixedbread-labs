@@ -9,19 +9,21 @@ import type {
   ParsingJob,
 } from "@mixedbread/sdk/resources/parsing/jobs";
 import { cn } from "cn";
-import { FileTextIcon, RotateCwIcon } from "lucide-react";
+import { ArrowUpIcon, FileTextIcon, RotateCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import {
-  CARD,
-  PILL,
-  PRIMARY,
+  BUTTON,
+  FOCUS,
+  POPUP,
   SEGMENT,
   SEGMENT_PRESSED,
   SEGMENT_TRACK,
 } from "@/components/controls";
 import { ShareButton } from "@/components/share-button";
+import { PageHeader } from "@/components/shell/shell";
+import { useRemember } from "@/lib/history";
 import {
   DEFAULT_OPTIONS,
   FORMATS,
@@ -33,18 +35,19 @@ import {
 } from "@/lib/parse";
 import { postJson } from "@/lib/request";
 import type { Highlight } from "./document";
-import { OptionsForm } from "./options";
-import { Results } from "./results";
+import { Inspector } from "./inspector";
+import { OptionsBar } from "./options";
 
 const DocumentPages = dynamic(() => import("./document"), { ssr: false });
-
-const CHIP =
-  "rounded-[0.35rem] bg-soft px-1.5 py-px font-mono text-[11px] text-muted-foreground";
 
 function kindOf(mimeType: string | null): "pdf" | "image" | "none" {
   if (mimeType === "application/pdf") return "pdf";
   if (mimeType?.startsWith("image/")) return "image";
   return "none";
+}
+
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 /** A finished parse: the pages with their elements boxed beside what the parser read */
@@ -63,14 +66,23 @@ export function ParseView({
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [hidden, setHidden] = useState<ElementType[]>([]);
-  const [pane, setPane] = useState<"document" | "results">("document");
+  const [pane, setPane] = useState<"document" | "elements">("document");
   const filename = job.filename ?? "document";
+  const format = FORMATS.find(({ value }) => value === result.return_format);
+  const modeLabel = MODES.find(({ value }) => value === mode)?.label;
+
+  useRemember({
+    kind: "parse",
+    href: jobHref(job.id, mode ?? DEFAULT_OPTIONS.mode),
+    title: filename,
+    detail: [modeLabel, format?.label].filter(Boolean).join(" · "),
+  });
 
   // Selecting on one side brings the element into view on the other
   const select = useCallback((id: string, from: "page" | "list") => {
-    setSelected(id);
-    if (from === "list") setPane("document");
-    else setPane("results");
+    setSelected(id || null);
+    if (!id) return;
+    setPane(from === "list" ? "document" : "elements");
     requestAnimationFrame(() =>
       document
         .getElementById(from === "page" ? `row-${id}` : `box-${id}`)
@@ -99,54 +111,48 @@ export function ParseView({
       : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-3 sm:px-5">
-        <div className="flex min-w-0 items-center gap-2">
-          <FileTextIcon className="size-4 shrink-0 text-logo" />
-          <h1 className="truncate text-sm font-medium">{filename}</h1>
-        </div>
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
-          <span>{plural(pages.length, "page")}</span>
-          <span aria-hidden="true">·</span>
-          <span>{plural(elements, "element")}</span>
-          {seconds !== null && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span>{seconds.toFixed(1)}s</span>
-            </>
-          )}
-        </p>
-        <p className="flex items-center gap-1 max-md:hidden">
-          {mode && (
-            <span className={CHIP}>
-              {MODES.find(({ value }) => value === mode)?.label}
+    <>
+      <PageHeader
+        title={
+          <>
+            <FileTextIcon className="size-4 shrink-0 text-logo" />
+            <h1 className="truncate text-foreground">{filename}</h1>
+            <span className="shrink-0 font-mono text-xs tabular-nums max-lg:hidden">
+              {[
+                plural(pages.length, "page"),
+                plural(elements, "element"),
+                seconds !== null && `${seconds.toFixed(1)}s`,
+                modeLabel,
+                format?.label,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </span>
-          )}
-          <span className={CHIP}>
-            {FORMATS.find(({ value }) => value === result.return_format)?.label}
-          </span>
-        </p>
-        <div className="ml-auto flex items-center gap-2">
-          <Reparse
-            fileId={job.file_id}
-            initial={{
-              mode: mode ?? DEFAULT_OPTIONS.mode,
-              return_format: result.return_format,
-              element_types: result.element_types,
-            }}
-          />
-          <ShareButton />
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Reparse
+              fileId={job.file_id}
+              initial={{
+                mode: mode ?? DEFAULT_OPTIONS.mode,
+                return_format: result.return_format,
+                element_types: result.element_types,
+              }}
+            />
+            <ShareButton />
+          </>
+        }
+      />
 
       <ToggleGroup
         value={[pane]}
         onValueChange={([value]) =>
-          value && setPane(value === "results" ? "results" : "document")
+          value && setPane(value === "elements" ? "elements" : "document")
         }
-        className={cn(SEGMENT_TRACK, "mx-3 mb-3 flex shrink-0 md:hidden")}
+        className={cn(SEGMENT_TRACK, "mx-2 mb-2 flex shrink-0 md:hidden")}
       >
-        {(["document", "results"] as const).map((value) => (
+        {(["document", "elements"] as const).map((value) => (
           <Toggle
             key={value}
             value={value}
@@ -157,10 +163,10 @@ export function ParseView({
         ))}
       </ToggleGroup>
 
-      <div className="grid min-h-0 flex-1 gap-3 px-3 pb-3 sm:px-4 sm:pb-4 md:grid-cols-[minmax(0,1.15fr)_minmax(22rem,1fr)]">
+      <div className="grid min-h-0 flex-1 gap-3 px-2 pb-2 md:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] md:px-3 md:pb-3 xl:grid-cols-[minmax(0,1fr)_32rem]">
         <div
           className={cn(
-            "min-h-0 overflow-hidden rounded-2xl bg-muted/50 dark:bg-card/40",
+            "min-h-0 overflow-hidden rounded-xl bg-background",
             pane !== "document" && "max-md:hidden"
           )}
         >
@@ -173,26 +179,21 @@ export function ParseView({
         </div>
         <div
           className={cn(
-            CARD,
-            "min-h-0 overflow-hidden",
-            pane !== "results" && "max-md:hidden"
+            "flex min-h-0 flex-col",
+            pane !== "elements" && "max-md:hidden"
           )}
         >
-          <Results
+          <Inspector
             result={result}
             pages={pages}
             filename={filename}
             highlight={highlight}
-            onToggleType={setHidden}
+            onHiddenChange={setHidden}
           />
         </div>
       </div>
-    </div>
+    </>
   );
-}
-
-function plural(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 /** Parses the same file again with other options, as a new link */
@@ -225,28 +226,39 @@ function Reparse({
 
   return (
     <Popover.Root>
-      <Popover.Trigger className={PILL}>
-        <RotateCwIcon className="size-3.5" />
-        Parse again
+      <Popover.Trigger className={BUTTON}>
+        <RotateCwIcon />
+        <span className="max-sm:hidden">Parse again</span>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Positioner align="end" sideOffset={6} className="z-50">
-          <Popover.Popup className="flex w-[min(32rem,calc(100vw-2rem))] origin-(--transform-origin) flex-col gap-4 rounded-2xl bg-popover p-4 shadow-float ring-1 ring-soft transition-[opacity,scale] duration-150 ease-out data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none">
-            <Popover.Title className="text-sm font-medium">
-              Parse this file again
+        <Popover.Positioner align="end" sideOffset={8} className="z-50">
+          <Popover.Popup
+            className={cn(
+              POPUP,
+              "flex w-[min(26rem,calc(100vw-1rem))] flex-col gap-1 p-2"
+            )}
+          >
+            <Popover.Title className="px-1.5 pt-1 text-[13px] text-muted-foreground">
+              Parse this file again with
             </Popover.Title>
-            <OptionsForm options={options} onChange={setOptions} />
-            <div className="flex items-center justify-end gap-3">
-              {error && <p className="text-[13px] text-destructive">{error}</p>}
+            <div className="flex items-center gap-1">
+              <OptionsBar options={options} onChange={setOptions} />
               <button
                 type="button"
                 disabled={submitting}
                 onClick={() => void submit()}
-                className={cn(PRIMARY, "h-8 px-3.5")}
+                className={cn(
+                  "ml-auto flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background shadow-raised transition-[scale,opacity] duration-200 ease-out-quint active:scale-90 disabled:opacity-40",
+                  FOCUS
+                )}
               >
-                {submitting ? "Starting" : "Parse"}
+                <ArrowUpIcon className="size-4" strokeWidth={2.25} />
+                <span className="sr-only">Parse</span>
               </button>
             </div>
+            {error && (
+              <p className="px-1.5 pb-1 text-xs text-destructive">{error}</p>
+            )}
           </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>

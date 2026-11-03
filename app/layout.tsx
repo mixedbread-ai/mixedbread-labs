@@ -2,8 +2,8 @@ import "./globals.css";
 
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Header } from "@/components/header";
 import { Providers } from "@/components/providers";
+import { Shell } from "@/components/shell/shell";
 import { fonts } from "@/lib/fonts";
 
 const DESCRIPTION =
@@ -34,11 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={fonts} suppressHydrationWarning>
       <body>
         <Providers>
-          {/* One screen: each tool scrolls inside its own panes */}
-          <div className="flex h-svh min-h-128 flex-col">
-            <Header />
-            <main className="flex min-h-0 flex-1 flex-col">{children}</main>
-          </div>
+          <Shell>{children}</Shell>
         </Providers>
       </body>
     </html>

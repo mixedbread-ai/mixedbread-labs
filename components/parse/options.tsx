@@ -1,15 +1,12 @@
 "use client";
 
-import { Toggle } from "@base-ui/react/toggle";
-import { ToggleGroup } from "@base-ui/react/toggle-group";
+import { Menu } from "@base-ui/react/menu";
 import { cn } from "cn";
+import { CheckIcon, ChevronDownIcon } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import { PICKER, POPUP, POPUP_ITEM, POPUP_LABEL } from "@/components/controls";
 import {
-  FOCUS,
-  SEGMENT,
-  SEGMENT_PRESSED,
-  SEGMENT_TRACK,
-} from "@/components/controls";
-import {
+  DEFAULT_OPTIONS,
   ELEMENT_TYPES,
   FORMATS,
   MODES,
@@ -17,101 +14,132 @@ import {
   typeColor,
 } from "@/lib/parse";
 
-function Field({
+const INDICATOR =
+  "absolute right-2 flex transition-[opacity,scale] duration-150 ease-spring data-ending-style:scale-50 data-ending-style:opacity-0 data-starting-style:scale-50 data-starting-style:opacity-0";
+
+function Picker({
   label,
+  value,
   children,
 }: {
   label: string;
-  children: React.ReactNode;
+  value: ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <div className="grid gap-1.5 sm:grid-cols-[6rem_1fr] sm:items-start">
-      <span className="pt-1.5 text-[13px] text-muted-foreground">{label}</span>
-      {children}
-    </div>
+    <Menu.Root>
+      <Menu.Trigger aria-label={label} className={cn(PICKER, "shrink-0")}>
+        <span className="truncate">{value}</span>
+        <ChevronDownIcon className="opacity-60" />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner align="start" sideOffset={8} className="z-50">
+          <Menu.Popup className={cn(POPUP, "w-56")}>
+            <Menu.Group>
+              <Menu.GroupLabel className={POPUP_LABEL}>{label}</Menu.GroupLabel>
+              {children}
+            </Menu.Group>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 
-/** One choice of several, held when pressed again rather than cleared */
-function Segmented<Value extends string>({
+function Choice<Value extends string>({
+  label,
   value,
   items,
   onChange,
 }: {
+  label: string;
   value: Value;
   items: { value: Value; label: string }[];
   onChange: (value: Value) => void;
 }) {
   return (
-    <ToggleGroup
-      value={[value]}
-      onValueChange={([next]) => next && onChange(next)}
-      className={cn(SEGMENT_TRACK, "flex w-full")}
+    <Picker
+      label={label}
+      value={items.find((item) => item.value === value)?.label}
     >
-      {items.map((item) => (
-        <Toggle
-          key={item.value}
-          value={item.value}
-          className={cn(SEGMENT, SEGMENT_PRESSED)}
-        >
-          {item.label}
-        </Toggle>
-      ))}
-    </ToggleGroup>
+      <Menu.RadioGroup
+        value={value}
+        onValueChange={(next: Value) => onChange(next)}
+      >
+        {items.map((item) => (
+          <Menu.RadioItem
+            key={item.value}
+            value={item.value}
+            closeOnClick
+            className={cn(POPUP_ITEM, "pr-8")}
+          >
+            {item.label}
+            <Menu.RadioItemIndicator className={INDICATOR}>
+              <CheckIcon className="size-3.5" />
+            </Menu.RadioItemIndicator>
+          </Menu.RadioItem>
+        ))}
+      </Menu.RadioGroup>
+    </Picker>
   );
 }
 
-export function OptionsForm({
+/** The parse job's options, as pickers in the card's bar */
+export function OptionsBar({
   options,
   onChange,
 }: {
   options: ParseOptions;
   onChange: (options: ParseOptions) => void;
 }) {
+  const types = options.element_types;
+  const all = types.length === ELEMENT_TYPES.length;
+
   return (
-    <div className="flex flex-col gap-4">
-      <Field label="Mode">
-        <Segmented
-          value={options.mode}
-          items={MODES}
-          onChange={(value) => onChange({ ...options, mode: value })}
-        />
-      </Field>
-      <Field label="Format">
-        <Segmented
-          value={options.return_format}
-          items={FORMATS}
-          onChange={(value) => onChange({ ...options, return_format: value })}
-        />
-      </Field>
-      <Field label="Elements">
-        <ToggleGroup
-          multiple
-          value={options.element_types}
-          onValueChange={(value) =>
-            value.length > 0 && onChange({ ...options, element_types: value })
-          }
-          className="flex flex-wrap gap-1.5"
-        >
-          {ELEMENT_TYPES.map(({ type, label }) => (
-            <Toggle
-              key={type}
-              value={type}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] text-muted-foreground/70 ring-1 ring-soft transition-[color,background-color,box-shadow] duration-150 hover:text-foreground data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-raised dark:data-pressed:bg-muted",
-                FOCUS
-              )}
-            >
-              <span
-                aria-hidden="true"
-                className="size-1.5 rounded-full opacity-35 transition-[opacity] in-data-pressed:opacity-100"
-                style={{ background: typeColor(type) }}
-              />
-              {label}
-            </Toggle>
-          ))}
-        </ToggleGroup>
-      </Field>
-    </div>
+    <>
+      <Choice
+        label="Mode"
+        value={options.mode}
+        items={MODES}
+        onChange={(mode) => onChange({ ...options, mode })}
+      />
+      <Choice
+        label="Format"
+        value={options.return_format}
+        items={FORMATS}
+        onChange={(format) => onChange({ ...options, return_format: format })}
+      />
+      <Picker
+        label="Elements"
+        value={all ? "All elements" : `${types.length} elements`}
+      >
+        {ELEMENT_TYPES.map(({ type, label }) => (
+          <Menu.CheckboxItem
+            key={type}
+            closeOnClick={false}
+            checked={types.includes(type)}
+            disabled={types.length === 1 && types.includes(type)}
+            onCheckedChange={(checked) =>
+              onChange({
+                ...options,
+                element_types: checked
+                  ? DEFAULT_OPTIONS.element_types.filter(
+                      (entry) => entry === type || types.includes(entry)
+                    )
+                  : types.filter((entry) => entry !== type),
+              })
+            }
+            style={{ "--c": typeColor(type) } as CSSProperties}
+            className={cn(POPUP_ITEM, "pr-8 data-disabled:opacity-60")}
+          >
+            <span className="size-2 rounded-[2px] bg-(--c)" />
+            {label}
+            <Menu.CheckboxItemIndicator className={INDICATOR}>
+              <CheckIcon className="size-3.5" />
+            </Menu.CheckboxItemIndicator>
+          </Menu.CheckboxItem>
+        ))}
+      </Picker>
+    </>
   );
 }

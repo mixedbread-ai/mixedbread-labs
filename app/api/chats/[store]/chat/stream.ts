@@ -6,10 +6,10 @@ import {
   type DocChatMessage,
   type DocCitedPage,
   type DocSource,
-  plainText,
 } from "@/lib/chat";
 import { pageMarkdown } from "@/lib/layout";
 import { docPageOf, type Passage, viewOf } from "@/lib/passages";
+import { plainText } from "@/lib/text";
 import type { SearchOutput } from "./tools";
 
 type Chunk = InferUIMessageChunk<DocChatMessage>;

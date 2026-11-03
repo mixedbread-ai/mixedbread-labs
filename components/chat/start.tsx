@@ -1,11 +1,9 @@
 "use client";
 
-import { cn } from "cn";
-import { ArrowRightIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PRIMARY } from "@/components/controls";
-import { Dropzone, UploadRow } from "@/components/dropzone";
+import { DropCard, FileRow, StartLayout } from "@/components/drop-card";
+import { PageHeader } from "@/components/shell/shell";
 import { CHAT_ACCEPT, MAX_CHAT_FILES, type UploadedFile } from "@/lib/files";
 import { postJson } from "@/lib/request";
 import { uploadFile } from "@/lib/upload";
@@ -33,6 +31,10 @@ export function ChatStart() {
 
   function pick(files: File[]) {
     const room = MAX_CHAT_FILES - picked.length;
+    if (room <= 0) {
+      setError(`A chat holds up to ${MAX_CHAT_FILES} files.`);
+      return;
+    }
     const added = files.slice(0, room).map((file) => ({
       key: crypto.randomUUID(),
       file,
@@ -70,72 +72,54 @@ export function ChatStart() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="mx-auto my-auto flex w-full max-w-xl flex-col gap-8 px-4 py-10 sm:px-6">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <p className="text-[13px] font-medium text-orange-700 dark:text-logo">
-            Search and chat
+    <>
+      <PageHeader title="New chat" />
+      <StartLayout
+        title="What do you want to ask?"
+        description="Upload files to search and chat with. Answers cite the page they come from, and anyone with the link can ask too."
+      >
+        <DropCard
+          multiple
+          accept={CHAT_ACCEPT}
+          hint={`Up to ${MAX_CHAT_FILES} documents, slides, images or text files`}
+          onFiles={pick}
+          bar={
+            picked.length > 0 && (
+              <span className="px-1.5 text-[13px] text-muted-foreground tabular-nums">
+                {picked.length} of {MAX_CHAT_FILES}
+              </span>
+            )
+          }
+          ready={uploaded.length > 0 && !waiting}
+          busy={submitting}
+          action="Create chat"
+          onSubmit={() => void start()}
+        >
+          {picked.length > 0 &&
+            picked.map((item) => (
+              <FileRow
+                key={item.key}
+                name={item.file.name}
+                size={item.file.size}
+                progress={item.progress}
+                error={item.error}
+                onRemove={
+                  submitting
+                    ? undefined
+                    : () =>
+                        setPicked((current) =>
+                          current.filter(({ key }) => key !== item.key)
+                        )
+                }
+              />
+            ))}
+        </DropCard>
+        {error && (
+          <p className="mt-3 text-center text-[13px] text-destructive motion-safe:animate-swap-in">
+            {error}
           </p>
-          <h1 className="text-2xl font-normal tracking-tight text-balance md:text-[2rem] md:leading-[1.15]">
-            Ask your documents.
-          </h1>
-          <p className="max-w-md text-sm leading-6 text-balance text-muted-foreground">
-            Upload files to make a chat. Answers cite the page they come from,
-            and anyone with the link can ask too.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {picked.length < MAX_CHAT_FILES && (
-            <Dropzone
-              multiple
-              accept={CHAT_ACCEPT}
-              title="Drop files, or browse"
-              hint={`Up to ${MAX_CHAT_FILES} documents, slides, images or text files`}
-              onFiles={pick}
-              className={cn(picked.length > 0 && "py-6")}
-            />
-          )}
-          {picked.length > 0 && (
-            <ul className="flex flex-col gap-2">
-              {picked.map((item) => (
-                <UploadRow
-                  key={item.key}
-                  name={item.file.name}
-                  size={item.file.size}
-                  progress={item.progress}
-                  error={item.error}
-                  onRemove={
-                    submitting
-                      ? undefined
-                      : () =>
-                          setPicked((current) =>
-                            current.filter(({ key }) => key !== item.key)
-                          )
-                  }
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="flex items-center justify-end gap-3">
-          {error && (
-            <p className="text-[13px] text-destructive motion-safe:animate-swap-in">
-              {error}
-            </p>
-          )}
-          <button
-            type="button"
-            disabled={uploaded.length === 0 || waiting || submitting}
-            onClick={() => void start()}
-            className={PRIMARY}
-          >
-            {submitting ? "Starting" : "Start chat"}
-            <ArrowRightIcon className="size-3.5" />
-          </button>
-        </div>
-      </div>
-    </div>
+        )}
+      </StartLayout>
+    </>
   );
 }

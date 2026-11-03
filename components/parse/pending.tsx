@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FOCUS, ToastMark } from "@/components/controls";
+import { PageHeader } from "@/components/shell/shell";
 import { isRunning } from "@/lib/parse";
 import { request } from "@/lib/request";
 
@@ -40,42 +41,45 @@ export function ParsePending({ job }: { job: ParsingJob }) {
   }, [job, running, router]);
 
   return (
-    <div className="flex flex-1 items-center justify-center px-4">
-      <div className="flex max-w-sm flex-col items-center gap-3 text-center motion-safe:animate-rise">
-        {running ? (
-          <>
-            <ToastMark live />
-            <p className="text-sm font-medium">
-              <span className="text-shimmer motion-safe:animate-shimmer">
-                {job.status === "pending" ? "Queued" : "Parsing"}
-              </span>{" "}
-              <span className="text-muted-foreground">{job.filename}</span>
-            </p>
-            <p className="font-mono text-xs text-muted-foreground tabular-nums">
-              {((now - started) / 1000).toFixed(1)}s
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-sm font-medium">
-              {job.status === "cancelled"
-                ? "This parse was cancelled."
-                : "This document couldn't be parsed."}
-            </p>
-            <p className="text-xs text-muted-foreground">{failureOf(job)}</p>
-            <Link
-              href="/parse"
-              className={cn(
-                "rounded-sm text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground",
-                FOCUS
-              )}
-            >
-              Parse another document
-            </Link>
-          </>
-        )}
+    <>
+      <PageHeader title={<span className="truncate">{job.filename}</span>} />
+      <div className="flex flex-1 items-center justify-center px-4 pb-12">
+        <div className="flex max-w-sm flex-col items-center gap-3 text-center motion-safe:animate-rise">
+          {running ? (
+            <>
+              <ToastMark live />
+              <p className="text-sm font-medium">
+                <span className="text-shimmer motion-safe:animate-shimmer">
+                  {job.status === "pending" ? "Queued" : "Parsing"}
+                </span>{" "}
+                <span className="text-muted-foreground">{job.filename}</span>
+              </p>
+              <p className="font-mono text-xs text-muted-foreground tabular-nums">
+                {((now - started) / 1000).toFixed(1)}s
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium">
+                {job.status === "cancelled"
+                  ? "This parse was cancelled."
+                  : "This document couldn't be parsed."}
+              </p>
+              <p className="text-xs text-muted-foreground">{failureOf(job)}</p>
+              <Link
+                href="/parse"
+                className={cn(
+                  "rounded-sm text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground",
+                  FOCUS
+                )}
+              >
+                Parse another document
+              </Link>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

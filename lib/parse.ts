@@ -4,6 +4,7 @@ import type {
   ParsingJob,
   ReturnFormat,
 } from "@mixedbread/sdk/resources/parsing/jobs";
+import { plainText } from "./text";
 
 export type ParseMode = "fast" | "high_quality";
 
@@ -83,6 +84,10 @@ export interface ParsedElement {
   confidence: number;
   /** Fractions of the page: left, top, width, height */
   box: [number, number, number, number];
+  /** Corners in the page's own pixels, as the API gives them */
+  bbox: [number, number, number, number];
+  /** The content as one plain line */
+  preview: string;
   page: number;
   content: string;
   summary?: string | null;
@@ -123,7 +128,10 @@ export function pagesOf(result: DocumentParserResult): ParsedPage[] {
           (right - left) / page.width,
           (bottom - top) / page.height,
         ],
+        bbox: [left, top, right, bottom],
         page: element.page,
+        preview:
+          plainText(withoutMath(element.content)) || element.summary || "",
         content: element.content,
         summary: element.summary,
         image: element.image,
@@ -131,4 +139,12 @@ export function pagesOf(result: DocumentParserResult): ParsedPage[] {
     }
   }
   return pages.filter(Boolean);
+}
+
+/** Inline math as the letters it shows, for one-line previews: `$\mathcal{X}$` reads `X` */
+function withoutMath(text: string): string {
+  return text
+    .replace(/\\[a-zA-Z]+\{([^{}]*)\}/g, "$1")
+    .replace(/\\[a-zA-Z]+/g, "")
+    .replace(/[$^_{}]/g, "");
 }

@@ -17,20 +17,51 @@ export const COLUMN = "mx-auto w-full max-w-[calc(48rem+3rem)] px-4 sm:px-6";
 export const FOCUS =
   "focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2";
 
-/** A quiet pill that lifts on hover, as the suggestions do */
-export const PILL = cn(
-  "flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] whitespace-nowrap text-muted-foreground ring-1 ring-soft transition-[color,background-color,box-shadow] duration-150 hover:bg-card hover:text-foreground hover:shadow-raised hover:ring-foreground/15 data-popup-open:bg-card data-popup-open:text-foreground data-popup-open:shadow-raised",
+const BUTTON_BASE = cn(
+  "relative inline-flex shrink-0 cursor-pointer items-center justify-center font-medium whitespace-nowrap transition-[background-color,color,box-shadow,scale,opacity] duration-150 ease-smooth select-none active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   FOCUS
 );
 
-/** The playground's dark round button, for the one action a view leads to */
+/** Bread Chat's outline button, small: raised on the panel */
+export const BUTTON = cn(
+  BUTTON_BASE,
+  "h-8 gap-1.5 rounded-lg bg-card px-3 text-[13px] text-foreground shadow-raised ring-1 ring-soft hover:bg-accent data-popup-open:bg-accent [&_svg]:text-muted-foreground [&_svg:not([class*='size-'])]:size-3.5"
+);
+
+/** The one action a view leads to */
 export const PRIMARY = cn(
-  "flex h-9 items-center gap-1.5 rounded-full bg-foreground px-4 text-sm font-medium text-background shadow-raised transition-[opacity,scale] duration-200 ease-out-quint active:scale-95 disabled:cursor-default disabled:opacity-40",
+  BUTTON_BASE,
+  "h-8 gap-1.5 rounded-lg bg-foreground px-3 text-[13px] text-background shadow-raised hover:bg-foreground/88"
+);
+
+/** A quiet icon button, for bars */
+export const GHOST_ICON = cn(
+  BUTTON_BASE,
+  "size-8 rounded-lg text-muted-foreground hover:bg-soft hover:text-foreground data-popup-open:bg-soft data-popup-open:text-foreground data-pressed:text-foreground"
+);
+
+/** A quiet text button, for bars */
+export const GHOST = cn(
+  BUTTON_BASE,
+  "h-7 gap-1.5 rounded-md px-2 text-xs font-normal text-muted-foreground hover:bg-soft hover:text-foreground data-popup-open:bg-soft data-popup-open:text-foreground data-pressed:bg-soft data-pressed:text-foreground [&_svg:not([class*='size-'])]:size-3.5"
+);
+
+/** A chip that opens a picker, as in Bread Chat's composer */
+export const PICKER = cn(
+  "flex h-8 min-w-0 cursor-pointer items-center gap-1 rounded-full px-2.5 text-[13px] text-muted-foreground transition-colors duration-150 hover:bg-soft hover:text-foreground data-popup-open:bg-soft data-popup-open:text-foreground [&_svg]:size-3.5 [&_svg]:shrink-0",
   FOCUS
 );
 
-/** A raised card, the surface results and uploads sit on */
-export const CARD = "rounded-2xl bg-card shadow-raised ring-1 ring-soft";
+/** Bread Chat's popups: menus, pickers, popovers */
+export const POPUP =
+  "origin-(--transform-origin) rounded-xl bg-popover p-1 text-popover-foreground shadow-float transition-[opacity,scale] duration-150 ease-smooth outline-none data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-ending-style:duration-100 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none";
+
+/** A row in a popup */
+export const POPUP_ITEM =
+  "relative flex min-h-8 cursor-default items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13.5px] text-foreground/90 outline-none transition-colors duration-100 select-none data-highlighted:bg-soft data-highlighted:text-foreground";
+
+export const POPUP_LABEL =
+  "px-2 pt-1.5 pb-1 font-mono text-[11px] text-muted-foreground";
 
 /** A segment of `SegmentList`, and of the option pickers that look like it */
 export const SEGMENT = cn(

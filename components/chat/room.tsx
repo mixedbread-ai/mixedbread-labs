@@ -1,13 +1,26 @@
 "use client";
 
+import { Popover } from "@base-ui/react/popover";
 import { cn } from "cn";
+import { ChevronDownIcon, FileIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PICKER, POPUP, ToastMark } from "@/components/controls";
 import { Playground } from "@/components/playground";
 import { ShareButton } from "@/components/share-button";
-import { type ChatFile, isIndexing } from "@/lib/chat";
+import { PageHeader } from "@/components/shell/shell";
+import { CHAT_MODEL_NAME, type ChatFile, isIndexing } from "@/lib/chat";
+import { useRemember } from "@/lib/history";
 import { request } from "@/lib/request";
 
 const POLL_MS = 2000;
+
+const STATUS: Record<ChatFile["status"], string> = {
+  pending: "Queued",
+  in_progress: "Indexing",
+  completed: "Ready",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
 
 /** A chat: its files' indexing while it runs, then search and chat over them */
 export function ChatRoom({
@@ -19,6 +32,18 @@ export function ChatRoom({
 }) {
   const [files, setFiles] = useState(initialFiles);
   const indexing = isIndexing(files);
+  const ready = files.some(({ status }) => status === "completed");
+  const title =
+    files.length === 1
+      ? (files[0]?.filename ?? "")
+      : `${files[0]?.filename ?? "Files"} and ${files.length - 1} more`;
+
+  useRemember({
+    kind: "chat",
+    href: `/chat/${store}`,
+    title,
+    detail: `${files.length} file${files.length === 1 ? "" : "s"}`,
+  });
 
   useEffect(() => {
     if (!indexing) return;
@@ -30,63 +55,116 @@ export function ChatRoom({
     return () => clearTimeout(timer);
   }, [files, indexing, store]);
 
-  const ready = files.some(({ status }) => status === "completed");
-  const title =
-    files.length === 1
-      ? (files[0]?.filename ?? "")
-      : `${files.length} documents`;
-
   return (
-    <Playground
-      store={store}
-      ready={ready}
-      intro={
-        <>
-          <p className="text-[13px] font-medium text-orange-700 dark:text-logo">
-            {indexing ? "Indexing" : "Ask your documents"}
-          </p>
-          <h1 className="max-w-full truncate text-xl font-normal tracking-tight md:text-2xl">
-            {title}
-          </h1>
-          {/* One finished file is already the title */}
-          {(files.length > 1 || files[0]?.status !== "completed") && (
-            <ul className="flex max-w-full flex-wrap justify-center gap-1.5">
-              {files.map((file) => (
-                <FileChip key={file.id} file={file} />
-              ))}
-            </ul>
-          )}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            Anyone with the link can ask about these files.
+    <>
+      <PageHeader
+        title={<h1 className="truncate">{title}</h1>}
+        actions={
+          <>
+            <FilesPopover files={files} />
             <ShareButton />
-          </div>
-        </>
-      }
-    />
+          </>
+        }
+      />
+      <Playground
+        store={store}
+        ready={ready}
+        intro={
+          indexing && !ready ? (
+            <>
+              <ToastMark live />
+              <h2 className="text-[1.75rem] leading-[1.1] font-normal tracking-[-0.025em] text-balance sm:text-[2.25rem]">
+                Reading your files
+              </h2>
+              <p className="max-w-md text-sm leading-6 text-balance text-muted-foreground">
+                Mixedbread is parsing and indexing them. You can ask as soon as
+                one is ready.
+              </p>
+              <FileList files={files} className="w-full max-w-sm" />
+            </>
+          ) : (
+            <>
+              <h2 className="text-[1.75rem] leading-[1.1] font-normal tracking-[-0.025em] text-balance motion-safe:animate-rise sm:text-[2.25rem]">
+                What do you want to know?
+              </h2>
+              <p className="max-w-md text-sm leading-6 text-balance text-muted-foreground">
+                Search{" "}
+                {files.length === 1 ? "the file" : `${files.length} files`}, or
+                ask {CHAT_MODEL_NAME} with Toast 1 as its search. Answers cite
+                the page they come from.
+              </p>
+            </>
+          )
+        }
+      />
+    </>
   );
 }
 
-function FileChip({ file }: { file: ChatFile }) {
-  const working = file.status === "pending" || file.status === "in_progress";
+function FilesPopover({ files }: { files: ChatFile[] }) {
+  const working = isIndexing(files);
 
   return (
-    <li
-      title={file.status === "failed" ? "Couldn't be indexed" : undefined}
-      className="flex min-w-0 items-center gap-1.5 rounded-full bg-card px-2.5 py-1 text-xs shadow-raised ring-1 ring-soft"
-    >
-      <span
-        key={file.status}
-        aria-hidden="true"
-        className={cn(
-          "size-1.5 shrink-0 rounded-full",
-          working && "bg-logo motion-safe:animate-breathe",
-          file.status === "completed" &&
-            "bg-muted-foreground/45 motion-safe:animate-pop",
-          (file.status === "failed" || file.status === "cancelled") &&
-            "bg-destructive motion-safe:animate-pop"
-        )}
-      />
-      <span className="max-w-56 truncate">{file.filename}</span>
-    </li>
+    <Popover.Root>
+      <Popover.Trigger className={cn(PICKER, "max-sm:hidden")}>
+        <StatusDot status={working ? "in_progress" : "completed"} />
+        {files.length} file{files.length === 1 ? "" : "s"}
+        <ChevronDownIcon className="opacity-60" />
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner align="end" sideOffset={8} className="z-50">
+          <Popover.Popup className={cn(POPUP, "w-80 p-1.5")}>
+            <Popover.Title className="px-1.5 pt-1 pb-1.5 font-mono text-[11px] text-muted-foreground">
+              Files
+            </Popover.Title>
+            <FileList files={files} />
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+
+function FileList({
+  files,
+  className,
+}: {
+  files: ChatFile[];
+  className?: string;
+}) {
+  return (
+    <ul className={cn("flex flex-col gap-px text-left", className)}>
+      {files.map((file) => (
+        <li
+          key={file.id}
+          className="flex h-9 items-center gap-2.5 rounded-lg px-2 text-[13.5px]"
+        >
+          <FileIcon className="size-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate">{file.filename}</span>
+          <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <StatusDot status={file.status} />
+            {STATUS[file.status]}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function StatusDot({ status }: { status: ChatFile["status"] }) {
+  const working = status === "pending" || status === "in_progress";
+
+  return (
+    <span
+      key={status}
+      aria-hidden="true"
+      className={cn(
+        "size-1.5 shrink-0 rounded-full",
+        working && "bg-logo motion-safe:animate-breathe",
+        status === "completed" && "bg-emerald-500 motion-safe:animate-pop",
+        (status === "failed" || status === "cancelled") &&
+          "bg-destructive motion-safe:animate-pop"
+      )}
+    />
   );
 }

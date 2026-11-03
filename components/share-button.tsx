@@ -3,7 +3,7 @@
 import { cn } from "cn";
 import { CheckIcon, LinkIcon } from "lucide-react";
 import { useState } from "react";
-import { PILL } from "./controls";
+import { BUTTON } from "./controls";
 import { IconSwap } from "./ui/icon-swap";
 
 /** Copies this page's address: anyone with it sees the same result */
@@ -19,7 +19,7 @@ export function ShareButton({ className }: { className?: string }) {
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      className={cn(PILL, className)}
+      className={cn(BUTTON, className)}
     >
       <IconSwap
         state={copied ? "b" : "a"}
