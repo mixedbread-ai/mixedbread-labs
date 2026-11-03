@@ -1,20 +1,12 @@
 "use client";
 
-import { Menu } from "@base-ui/react/menu";
-import { Toggle } from "@base-ui/react/toggle";
-import { ToggleGroup } from "@base-ui/react/toggle-group";
+import { Select } from "@base-ui/react/select";
+import type { ElementType } from "@mixedbread/sdk/resources/parsing/jobs";
 import { cn } from "cn";
-import { CheckIcon, ChevronDownIcon } from "lucide-react";
-import type { CSSProperties } from "react";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import { FOCUS, POPUP, POPUP_ITEM, SEGMENT_TRACK } from "@/components/controls";
 import {
-  FOCUS,
-  POPUP,
-  POPUP_ITEM,
-  SEGMENT_PRESSED,
-  SEGMENT_TRACK,
-} from "@/components/controls";
-import {
-  DEFAULT_OPTIONS,
   ELEMENT_TYPES,
   FORMATS,
   MODES,
@@ -24,127 +16,122 @@ import {
 
 const LABEL = "text-[13px] text-muted-foreground";
 
-/** A segment that fits three to a phone's row */
-const SEGMENT = cn(
-  "flex h-full min-w-0 flex-1 items-center justify-center rounded-full px-2 text-[13px] font-medium whitespace-nowrap text-muted-foreground transition-[color] hover:text-foreground disabled:pointer-events-none",
-  SEGMENT_PRESSED,
+const TRIGGER = cn(
+  SEGMENT_TRACK,
+  "flex h-8 w-full cursor-pointer items-center gap-2 px-3 text-left text-[13px] transition-[background-color] hover:bg-muted disabled:pointer-events-none data-popup-open:bg-muted",
   FOCUS
 );
 
-/** One choice of several, held when pressed again rather than cleared */
-function Segmented<Value extends string>({
+const INDICATOR = "ml-auto flex size-3.5 items-center justify-center";
+
+/** A select whose trigger and popup every option row shares */
+function Field<Value extends string, Multiple extends boolean = false>({
   label,
   value,
-  items,
-  onChange,
+  multiple,
+  onValueChange,
+  display,
+  children,
 }: {
   label: string;
-  value: Value;
-  items: { value: Value; label: string }[];
-  onChange: (value: Value) => void;
+  value: Multiple extends true ? Value[] : Value;
+  multiple?: Multiple;
+  onValueChange: (value: Multiple extends true ? Value[] : Value) => void;
+  /** What the trigger shows for the value */
+  display: ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <ToggleGroup
-      aria-label={label}
-      value={[value]}
-      onValueChange={([next]) => next && onChange(next)}
-      className={cn(SEGMENT_TRACK, "flex h-8 w-full")}
-    >
-      {items.map((item) => (
-        <Toggle key={item.value} value={item.value} className={SEGMENT}>
-          {item.label}
-        </Toggle>
-      ))}
-    </ToggleGroup>
-  );
-}
-
-/** Which element types to keep, picked from a menu so the row stays one line */
-function ElementsMenu({
-  types,
-  onChange,
-}: {
-  types: ParseOptions["element_types"];
-  onChange: (types: ParseOptions["element_types"]) => void;
-}) {
-  const all = types.length === ELEMENT_TYPES.length;
-
-  return (
-    <Menu.Root>
-      <Menu.Trigger
-        aria-label="Elements"
-        className={cn(
-          SEGMENT_TRACK,
-          "flex h-8 w-full items-center gap-2 px-3 text-left text-[13px] font-medium transition-[background-color] hover:bg-muted disabled:pointer-events-none data-popup-open:bg-muted",
-          FOCUS
-        )}
+    <>
+      <span className={LABEL}>{label}</span>
+      <Select.Root<Value, Multiple>
+        value={value}
+        multiple={multiple}
+        onValueChange={(next) => {
+          if (next !== null) onValueChange(next);
+        }}
       >
-        <span className="flex -space-x-0.5" aria-hidden="true">
-          {types.slice(0, 6).map((type) => (
-            <span
-              key={type}
-              className="size-2 rounded-[2px] bg-(--c) ring-1 ring-card"
-              style={{ "--c": typeColor(type) } as CSSProperties}
-            />
-          ))}
-        </span>
-        <span className="min-w-0 flex-1 truncate">
-          {all
-            ? "All types"
-            : `${types.length} of ${ELEMENT_TYPES.length} types`}
-        </span>
-        <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner align="end" sideOffset={6} className="z-50">
-          <Menu.Popup className={cn(POPUP, "w-56")}>
-            {ELEMENT_TYPES.map(({ type, label }) => (
-              <Menu.CheckboxItem
-                key={type}
-                closeOnClick={false}
-                checked={types.includes(type)}
-                disabled={types.length === 1 && types.includes(type)}
-                onCheckedChange={(checked) =>
-                  onChange(
-                    checked
-                      ? DEFAULT_OPTIONS.element_types.filter(
-                          (entry) => entry === type || types.includes(entry)
-                        )
-                      : types.filter((entry) => entry !== type)
-                  )
-                }
-                style={{ "--c": typeColor(type) } as CSSProperties}
-                className={cn(POPUP_ITEM, "data-disabled:opacity-60")}
-              >
-                <span className="flex size-3.5 items-center justify-center">
-                  <Menu.CheckboxItemIndicator>
-                    <CheckIcon className="size-3.5" />
-                  </Menu.CheckboxItemIndicator>
-                </span>
-                <span className="size-2 rounded-[2px] bg-(--c)" />
-                {label}
-              </Menu.CheckboxItem>
-            ))}
-            {!all && (
-              <>
-                <Menu.Separator className="mx-2 my-1 h-px bg-soft" />
-                <Menu.Item
-                  onClick={() => onChange(DEFAULT_OPTIONS.element_types)}
-                  className={POPUP_ITEM}
-                >
-                  <span className="size-3.5" />
-                  Select all
-                </Menu.Item>
-              </>
-            )}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+        <Select.Trigger aria-label={label} className={TRIGGER}>
+          <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+            {display}
+          </span>
+          <Select.Icon className="shrink-0 text-muted-foreground">
+            <ChevronsUpDownIcon className="size-3.5" />
+          </Select.Icon>
+        </Select.Trigger>
+        <Select.Portal>
+          <Select.Positioner
+            alignItemWithTrigger={false}
+            align="start"
+            sideOffset={6}
+            className="z-50"
+          >
+            <Select.Popup
+              className={cn(
+                POPUP,
+                "max-h-(--available-height) w-(--anchor-width) min-w-48 overflow-y-auto"
+              )}
+            >
+              {children}
+            </Select.Popup>
+          </Select.Positioner>
+        </Select.Portal>
+      </Select.Root>
+    </>
   );
 }
 
-/** The parse job's options as labeled rows, set before a file goes up */
+function Option({
+  value,
+  disabled,
+  style,
+  children,
+}: {
+  value: string;
+  disabled?: boolean;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
+  return (
+    <Select.Item
+      value={value}
+      disabled={disabled}
+      style={style}
+      className={cn(POPUP_ITEM, "data-disabled:opacity-60")}
+    >
+      <Select.ItemText className="flex items-center gap-2">
+        {children}
+      </Select.ItemText>
+      <Select.ItemIndicator className={INDICATOR}>
+        <CheckIcon className="size-3.5" />
+      </Select.ItemIndicator>
+    </Select.Item>
+  );
+}
+
+/** How many types are kept, then their colors, so the text starts where the other rows' does */
+function TypesValue({ types }: { types: ElementType[] }) {
+  return (
+    <>
+      <span className="min-w-0 flex-1 truncate">
+        {types.length === ELEMENT_TYPES.length
+          ? "All types"
+          : `${types.length} of ${ELEMENT_TYPES.length} types`}
+      </span>
+      <span aria-hidden="true" className="flex shrink-0 -space-x-0.5">
+        {types.slice(0, 6).map((type) => (
+          <span
+            key={type}
+            className="size-2 rounded-[2px] bg-(--c) ring-1 ring-card"
+            style={{ "--c": typeColor(type) } as CSSProperties}
+          />
+        ))}
+      </span>
+    </>
+  );
+}
+
+/** The parse job's options as labeled selects, set before a file goes up */
 export function OptionsForm({
   options,
   onChange,
@@ -154,30 +141,69 @@ export function OptionsForm({
   onChange: (options: ParseOptions) => void;
   disabled?: boolean;
 }) {
+  const types = options.element_types;
+
   return (
     <fieldset
       disabled={disabled}
-      className="grid min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 transition-opacity disabled:opacity-60 sm:grid-cols-[4.5rem_minmax(0,1fr)]"
+      className="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 transition-opacity disabled:opacity-60"
     >
-      <span className={LABEL}>Mode</span>
-      <Segmented
+      <Field
         label="Mode"
         value={options.mode}
-        items={MODES}
-        onChange={(mode) => onChange({ ...options, mode })}
-      />
-      <span className={LABEL}>Format</span>
-      <Segmented
+        onValueChange={(mode) => onChange({ ...options, mode })}
+        display={MODES.find(({ value }) => value === options.mode)?.label}
+      >
+        {MODES.map(({ value, label }) => (
+          <Option key={value} value={value}>
+            {label}
+          </Option>
+        ))}
+      </Field>
+      <Field
         label="Format"
         value={options.return_format}
-        items={FORMATS}
-        onChange={(format) => onChange({ ...options, return_format: format })}
-      />
-      <span className={LABEL}>Elements</span>
-      <ElementsMenu
-        types={options.element_types}
-        onChange={(types) => onChange({ ...options, element_types: types })}
-      />
+        onValueChange={(format) =>
+          onChange({ ...options, return_format: format })
+        }
+        display={
+          FORMATS.find(({ value }) => value === options.return_format)?.label
+        }
+      >
+        {FORMATS.map(({ value, label }) => (
+          <Option key={value} value={value}>
+            {label}
+          </Option>
+        ))}
+      </Field>
+      <Field
+        label="Elements"
+        multiple
+        value={types}
+        onValueChange={(next) =>
+          next.length > 0 &&
+          onChange({
+            ...options,
+            // Kept in the list's order, whichever order they were picked in
+            element_types: ELEMENT_TYPES.flatMap(({ type }) =>
+              next.includes(type) ? [type] : []
+            ),
+          })
+        }
+        display={<TypesValue types={types} />}
+      >
+        {ELEMENT_TYPES.map(({ type, label }) => (
+          <Option
+            key={type}
+            value={type}
+            disabled={types.length === 1 && types.includes(type)}
+            style={{ "--c": typeColor(type) } as CSSProperties}
+          >
+            <span className="size-2 rounded-[2px] bg-(--c)" />
+            {label}
+          </Option>
+        ))}
+      </Field>
     </fieldset>
   );
 }
