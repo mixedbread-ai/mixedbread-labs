@@ -1,16 +1,26 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { z } from "zod";
 
 /** A parse or chat this browser opened, so it can find its way back without an account */
-const EntrySchema = z.object({
-  kind: z.enum(["parse", "chat"]),
-  href: z.string(),
-  title: z.string(),
-  detail: z.string(),
-  at: z.number(),
-});
+export interface HistoryEntry {
+  kind: "parse" | "chat";
+  href: string;
+  title: string;
+  detail: string;
+  at: number;
+}
 
-export type HistoryEntry = z.infer<typeof EntrySchema>;
+// Checked by hand rather than with a schema library, which would ship on every page
+function isEntry(value: unknown): value is HistoryEntry {
+  if (typeof value !== "object" || value === null) return false;
+  const entry: Partial<Record<keyof HistoryEntry, unknown>> = value;
+  return (
+    (entry.kind === "parse" || entry.kind === "chat") &&
+    typeof entry.href === "string" &&
+    typeof entry.title === "string" &&
+    typeof entry.detail === "string" &&
+    typeof entry.at === "number"
+  );
+}
 
 const KEY = "labs:history";
 const MAX_ENTRIES = 50;
@@ -22,10 +32,8 @@ const listeners = new Set<() => void>();
 function read(): HistoryEntry[] {
   if (cache) return cache;
   try {
-    const stored = z
-      .array(EntrySchema)
-      .safeParse(JSON.parse(localStorage.getItem(KEY) ?? "[]"));
-    cache = stored.data ?? EMPTY;
+    const stored: unknown = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+    cache = Array.isArray(stored) && stored.every(isEntry) ? stored : EMPTY;
   } catch {
     cache = EMPTY;
   }

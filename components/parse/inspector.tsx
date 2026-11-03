@@ -20,6 +20,7 @@ import {
   type CSSProperties,
   memo,
   useDeferredValue,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -42,8 +43,8 @@ import {
   typeColor,
   typeOf,
 } from "@/lib/parse";
-import { ParsedContent } from "./content";
 import type { Selection } from "./document";
+import { ParsedContent, preloadParsedContent } from "./parsed-content";
 import { elementAt, linkTwins } from "./twins";
 
 /** How parsed content shows: as it reads, or as the parser wrote it */
@@ -69,6 +70,8 @@ export function Inspector({
   selection: Selection;
   onHiddenChange: (hidden: ElementType[]) => void;
 }) {
+  useEffect(preloadParsedContent, []);
+
   return (
     <Tabs.Root defaultValue="elements" className="flex h-full min-h-0 flex-col">
       <SegmentList className="flex shrink-0">
@@ -78,7 +81,12 @@ export function Inspector({
           </Tabs.Tab>
         ))}
       </SegmentList>
-      <Tabs.Panel value="elements" className="flex min-h-0 flex-1 flex-col">
+      {/* Kept while other tabs show, so coming back doesn't rebuild every row */}
+      <Tabs.Panel
+        value="elements"
+        keepMounted
+        className="flex min-h-0 flex-1 flex-col data-hidden:hidden"
+      >
         <Elements
           pages={pages}
           format={result.return_format}
@@ -446,6 +454,7 @@ function TextView({
   filename: string;
 }) {
   const [source, setSource] = useState(false);
+  const [pages, setPages] = useState(PAGES_AT_ONCE);
   const format = result.return_format;
   const plain = format === "plain";
   const all = () =>
@@ -477,13 +486,13 @@ function TextView({
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-4">
-        {result.chunks.map((chunk, index) => {
+        {result.chunks.slice(0, pages).map((chunk, index) => {
           const content = chunk.content ?? chunk.content_to_embed;
           return (
             <section
               key={index}
               aria-label={`Page ${index + 1}`}
-              className="flex flex-col gap-2 py-4 [contain-intrinsic-size:auto_40rem] [content-visibility:auto]"
+              className="flex flex-col gap-2 py-4"
             >
               <h2 className="text-[11px] text-muted-foreground tabular-nums">
                 Page {index + 1}
@@ -498,9 +507,28 @@ function TextView({
             </section>
           );
         })}
+        {pages < result.chunks.length && (
+          <div ref={onNear(() => setPages((count) => count + PAGES_AT_ONCE))} />
+        )}
       </div>
     </>
   );
+}
+
+// Pages of text render a few at a time as the reader nears them
+const PAGES_AT_ONCE = 3;
+
+/** Calls `onEnter` each time the element comes within a screen of its scroller's view */
+function onNear(onEnter: () => void) {
+  return (element: HTMLElement | null) => {
+    if (!element) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => entry?.isIntersecting && onEnter(),
+      { root: element.parentElement, rootMargin: "100% 0px" }
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  };
 }
 
 /** The result as the API returns it, figures' image data cut short to keep it readable */

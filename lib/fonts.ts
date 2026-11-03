@@ -7,10 +7,11 @@ const fontSans = FontSans({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+// Only code views use it, so it loads when one shows instead of with every page
 const fontMono = FontMono({
   subsets: ["latin"],
   variable: "--font-mono",
-  weight: ["300", "400", "500", "600", "700"],
+  preload: false,
 });
 
 export const fonts = cn(
