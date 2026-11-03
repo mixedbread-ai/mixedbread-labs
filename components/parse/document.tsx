@@ -5,7 +5,14 @@ import type { ElementType } from "@mixedbread/sdk/resources/parsing/jobs";
 import { cn } from "cn";
 import { ChevronDownIcon, ChevronUpIcon, SquareDashedIcon } from "lucide-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { type CSSProperties, memo, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  memo,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { GHOST_ICON } from "@/components/controls";
 import {
@@ -274,17 +281,21 @@ const Sheet = memo(function Sheet({
       )}
     >
       {near && width > 0 && pdf && (
-        <Page
-          pdf={pdf}
-          pageNumber={page.number}
-          width={width}
-          devicePixelRatio={Math.min(devicePixelRatio, MAX_PIXEL_RATIO)}
-          renderTextLayer={false}
-          renderAnnotationLayer={false}
-          loading={null}
-          onRenderSuccess={() => setDrawn(true)}
-          className="absolute! inset-0 overflow-hidden rounded-[3px] [&_canvas]:h-full! [&_canvas]:w-full!"
-        />
+        // Page suspends while it loads; its own boundary keeps that from
+        // tearing down every other page's canvas
+        <Suspense fallback={null}>
+          <Page
+            pdf={pdf}
+            pageNumber={page.number}
+            width={width}
+            devicePixelRatio={Math.min(devicePixelRatio, MAX_PIXEL_RATIO)}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            loading={null}
+            onRenderSuccess={() => setDrawn(true)}
+            className="absolute! inset-0 overflow-hidden rounded-[3px] [&_canvas]:h-full! [&_canvas]:w-full!"
+          />
+        </Suspense>
       )}
       {image && (
         <img
