@@ -33,14 +33,10 @@ export default async function Page({ params, searchParams }: Props) {
     return <ParsePending job={job} />;
   }
 
-  const file = await getMixedbreadClient()
-    .files.retrieve(job.file_id)
-    .catch(() => null);
   return (
     <ParseView
       job={job}
       result={job.result}
-      mimeType={file?.mime_type ?? null}
       mode={MODES.find(({ value }) => value === mode)?.value}
     />
   );

@@ -54,7 +54,7 @@ export function ParsePending({ job }: { job: ParsingJob }) {
                 </span>{" "}
                 <span className="text-muted-foreground">{job.filename}</span>
               </p>
-              <p className="font-mono text-xs text-muted-foreground tabular-nums">
+              <p className="text-xs text-muted-foreground tabular-nums">
                 {((now - started) / 1000).toFixed(1)}s
               </p>
             </>

@@ -18,6 +18,11 @@ const CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // A parse result never changes and a chat polls its own state, so pages
+    // visited in the last minutes open from the client cache
+    staleTimes: { dynamic: 300 },
+  },
   // Page images are full-size scans, which next/image resizes to where they
   // show. They come from /api/pages, whose addresses never change what they
   // point to, so a resized page keeps for as long as the cache allows.

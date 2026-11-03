@@ -158,7 +158,7 @@ export default function DocumentPages({
           <ChevronUpIcon className="size-4" />
           <span className="sr-only">Previous page</span>
         </button>
-        <span className="min-w-14 text-center font-mono text-xs text-muted-foreground tabular-nums">
+        <span className="min-w-14 text-center text-xs text-muted-foreground tabular-nums">
           <span className="text-foreground">{current}</span> / {pages.length}
         </span>
         <button
@@ -199,10 +199,7 @@ function useWidth(ref: React.RefObject<HTMLDivElement | null>): number {
   return width;
 }
 
-/**
- * Whether an element is within a screen of the view. Pages draw only then:
- * a hundred drawn pages would hold over a gigabyte of canvas.
- */
+/** Whether an element is within two screens of the view, where pages draw ahead of the reader */
 function useNear(
   ref: React.RefObject<HTMLElement | null>,
   root: React.RefObject<HTMLElement | null>
@@ -213,7 +210,7 @@ function useNear(
     if (!element) return;
     const observer = new IntersectionObserver(
       ([entry]) => setNear(entry?.isIntersecting ?? false),
-      { root: root.current, rootMargin: "100% 0px" }
+      { root: root.current, rootMargin: "200% 0px" }
     );
     observer.observe(element);
     return () => observer.disconnect();
@@ -223,6 +220,15 @@ function useNear(
 
 // Sharper than this costs canvas memory a phone's 3x screen can't show
 const MAX_PIXEL_RATIO = 2;
+
+// A kept page is drawn again once the column's width moves this far from it
+const REDRAW_RESIZE = 0.25;
+
+interface Snapshot {
+  src: string;
+  /** The column width it was drawn at */
+  width: number;
+}
 
 const Sheet = memo(function Sheet({
   page,
@@ -248,7 +254,19 @@ const Sheet = memo(function Sheet({
 }) {
   const ref = useRef<HTMLElement>(null);
   const near = useNear(ref, root);
-  const [drawn, setDrawn] = useState(false);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  // A drawn page is kept as an image and its canvas let go: scrolling back
+  // shows it at once, and a hundred pages don't hold a gigabyte of canvas
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const drawn = !!snapshot || imageLoaded;
+  const stale =
+    !snapshot || Math.abs(snapshot.width - width) > width * REDRAW_RESIZE;
+
+  useEffect(() => {
+    if (!snapshot) return;
+    return () => URL.revokeObjectURL(snapshot.src);
+  }, [snapshot]);
 
   return (
     <section
@@ -262,24 +280,45 @@ const Sheet = memo(function Sheet({
         (waiting || ((pdf || image) && !drawn)) && "motion-safe:animate-pulse"
       )}
     >
-      {near && width > 0 && pdf && (
+      {near && width > 0 && pdf && stale && (
         <Page
           pdf={pdf}
+          canvasRef={canvas}
           pageNumber={page.number}
           width={width}
           devicePixelRatio={Math.min(devicePixelRatio, MAX_PIXEL_RATIO)}
           renderTextLayer={false}
           renderAnnotationLayer={false}
           loading={null}
-          onRenderSuccess={() => setDrawn(true)}
+          onRenderSuccess={() => {
+            const drawnWidth = width;
+            canvas.current?.toBlob(
+              (blob) =>
+                blob &&
+                setSnapshot({
+                  src: URL.createObjectURL(blob),
+                  width: drawnWidth,
+                }),
+              "image/webp",
+              0.92
+            );
+          }}
           className="absolute! inset-0 overflow-hidden rounded-[3px] [&_canvas]:h-full! [&_canvas]:w-full!"
+        />
+      )}
+      {snapshot && (
+        <img
+          src={snapshot.src}
+          alt=""
+          decoding="async"
+          className="absolute inset-0 size-full rounded-[3px]"
         />
       )}
       {image && (
         <img
           src={image}
           alt=""
-          onLoad={() => setDrawn(true)}
+          onLoad={() => setImageLoaded(true)}
           className="absolute inset-0 size-full rounded-[3px]"
         />
       )}

@@ -114,7 +114,7 @@ function FilesPopover({ files }: { files: ChatFile[] }) {
       <Popover.Portal>
         <Popover.Positioner align="end" sideOffset={8} className="z-50">
           <Popover.Popup className={cn(POPUP, "w-80 p-1.5")}>
-            <Popover.Title className="px-1.5 pt-1 pb-1.5 font-mono text-[11px] text-muted-foreground">
+            <Popover.Title className="px-1.5 pt-1 pb-1.5 text-[11px] text-muted-foreground">
               Files
             </Popover.Title>
             <FileList files={files} />

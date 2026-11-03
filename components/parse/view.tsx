@@ -31,9 +31,11 @@ import { OptionsForm } from "./options";
 
 const DocumentPages = dynamic(() => import("./document"), { ssr: false });
 
-function kindOf(mimeType: string | null): "pdf" | "image" | "none" {
-  if (mimeType === "application/pdf") return "pdf";
-  if (mimeType?.startsWith("image/")) return "image";
+/** How the file's pages can show, from its name, so the page needs no second call for its type */
+function kindOf(filename: string): "pdf" | "image" | "none" {
+  const extension = filename.split(".").pop()?.toLowerCase() ?? "";
+  if (extension === "pdf") return "pdf";
+  if (["png", "jpg", "jpeg", "webp", "gif"].includes(extension)) return "image";
   return "none";
 }
 
@@ -45,12 +47,10 @@ function plural(count: number, noun: string): string {
 export function ParseView({
   job,
   result,
-  mimeType,
   mode,
 }: {
   job: ParsingJob;
   result: DocumentParserResult;
-  mimeType: string | null;
   mode?: ParseMode;
 }) {
   const pages = useMemo(() => pagesOf(result), [result]);
@@ -104,7 +104,7 @@ export function ParseView({
           <>
             <FileTextIcon className="size-4 shrink-0 text-logo" />
             <h1 className="truncate text-foreground">{filename}</h1>
-            <span className="shrink-0 font-mono text-xs tabular-nums max-lg:hidden">
+            <span className="shrink-0 text-xs tabular-nums max-lg:hidden">
               {[
                 plural(pages.length, "page"),
                 plural(elements, "element"),
@@ -152,7 +152,7 @@ export function ParseView({
         >
           <DocumentPages
             fileUrl={`/api/files/${job.file_id}`}
-            kind={kindOf(mimeType)}
+            kind={kindOf(filename)}
             pages={pages}
             selection={selection}
           />

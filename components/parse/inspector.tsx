@@ -145,7 +145,7 @@ function Elements({
             aria-label="Filter elements by text"
             className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
           />
-          <span className="shrink-0 font-mono text-[11px] tabular-nums">
+          <span className="shrink-0 text-[11px] tabular-nums">
             {shown.length === all.length
               ? all.length
               : `${shown.length}/${all.length}`}
@@ -236,7 +236,7 @@ function TypeMenu({
                 </span>
                 <span className="size-2 rounded-[2px] bg-(--c)" />
                 {label}
-                <span className="ml-auto font-mono text-[11px] text-muted-foreground tabular-nums">
+                <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
                   {counts.get(type)}
                 </span>
               </Menu.CheckboxItem>
@@ -280,7 +280,7 @@ const Row = memo(function Row({
             <span className="text-muted-foreground italic">No text</span>
           )}
         </span>
-        <span className="text-right font-mono text-[11px] text-muted-foreground tabular-nums">
+        <span className="text-right text-[11px] text-muted-foreground tabular-nums">
           {element.page}
         </span>
       </button>
@@ -313,7 +313,7 @@ function Detail({
         <span className="text-[13px] font-medium">
           {typeOf(element.type).label}
         </span>
-        <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+        <span className="text-[11px] text-muted-foreground tabular-nums">
           p. {element.page} · {element.confidence.toFixed(2)}
         </span>
         <span className="ml-auto flex items-center">
@@ -362,9 +362,9 @@ function Detail({
             {element.summary}
           </p>
         )}
-        <p className="font-mono text-[11px] text-muted-foreground tabular-nums">
-          box {Math.round(left)}, {Math.round(top)} → {Math.round(right)},{" "}
-          {Math.round(bottom)}
+        <p className="text-xs text-muted-foreground tabular-nums">
+          Box {Math.round(left)}, {Math.round(top)} to {Math.round(right)},{" "}
+          {Math.round(bottom)} px
         </p>
       </div>
     </section>
@@ -485,7 +485,7 @@ function TextView({
               aria-label={`Page ${index + 1}`}
               className="flex flex-col gap-2 py-4 [contain-intrinsic-size:auto_40rem] [content-visibility:auto]"
             >
-              <h2 className="font-mono text-[11px] text-muted-foreground tabular-nums">
+              <h2 className="text-[11px] text-muted-foreground tabular-nums">
                 Page {index + 1}
               </h2>
               {source || format === "plain" ? (
@@ -528,9 +528,6 @@ function JsonView({
   return (
     <>
       <div className={cn(BAR, "mt-2")}>
-        <span className="px-1 font-mono text-[11px] text-muted-foreground">
-          result
-        </span>
         <span className="ml-auto flex items-center gap-0.5">
           <CopyButton text={full} label="Copy" />
           <DownloadButton
