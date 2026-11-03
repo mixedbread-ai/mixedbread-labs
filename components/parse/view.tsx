@@ -159,11 +159,13 @@ export function ParseView({
         className="mx-2 mb-2 shrink-0 md:hidden"
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-2 pb-2 md:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] md:px-3 md:pb-3 xl:grid-cols-[minmax(0,1fr)_32rem]">
+      {/* Phones stack both views and make one invisible: display none would
+          drop its scroll, width and drawn pages */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 px-2 pb-2 md:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] md:px-3 md:pb-3 xl:grid-cols-[minmax(0,1fr)_32rem]">
         <div
           className={cn(
-            "min-h-0 overflow-hidden rounded-xl bg-background",
-            !onPage && "max-md:hidden"
+            "min-h-0 overflow-hidden rounded-xl bg-background max-md:[grid-area:1/1]",
+            !onPage && "max-md:invisible"
           )}
         >
           <DocumentPages
@@ -173,7 +175,12 @@ export function ParseView({
             selection={selection}
           />
         </div>
-        <div className={cn("flex min-h-0 flex-col", onPage && "max-md:hidden")}>
+        <div
+          className={cn(
+            "flex min-h-0 flex-col max-md:[grid-area:1/1]",
+            onPage && "max-md:invisible"
+          )}
+        >
           <Inspector
             result={result}
             pages={pages}

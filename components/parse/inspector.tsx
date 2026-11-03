@@ -325,24 +325,14 @@ export function Detail({
       )}
     >
       <div className="flex h-10 shrink-0 items-center gap-2 pr-1 pl-2.5">
-        <span className="size-2 rounded-[2px] bg-(--c)" />
-        <span className="text-[13px] font-medium">
+        <span className="size-2 shrink-0 rounded-[2px] bg-(--c)" />
+        <span className="truncate text-[13px] font-medium">
           {typeOf(element.type).label}
         </span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
+        <span className="shrink-0 text-[11px] whitespace-nowrap text-muted-foreground tabular-nums">
           p. {element.page} · {element.confidence.toFixed(2)}
         </span>
-        <span className="ml-auto flex items-center">
-          {!plain && (
-            <Segmented
-              small
-              label="Show"
-              value={source ? "source" : "rendered"}
-              items={VIEWS}
-              onChange={(view) => setSource(view === "source")}
-              className="mr-1"
-            />
-          )}
+        <span className="ml-auto flex shrink-0 items-center">
           <CopyButton text={() => element.content} />
           <button
             type="button"
@@ -363,7 +353,7 @@ export function Detail({
           />
         )}
         {element.content.trim() ? (
-          source || format === "plain" ? (
+          source || plain ? (
             <pre className="font-mono text-xs leading-5 break-words whitespace-pre-wrap">
               {element.content}
             </pre>
@@ -378,22 +368,33 @@ export function Detail({
             {element.summary}
           </p>
         )}
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground tabular-nums">
-            Box {Math.round(left)}, {Math.round(top)} to {Math.round(right)},{" "}
-            {Math.round(bottom)} px
-          </p>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          Box {Math.round(left)}, {Math.round(top)} to {Math.round(right)},{" "}
+          {Math.round(bottom)} px
+        </p>
+      </div>
+      {(!plain || onShowOnPage) && (
+        <div className="flex h-11 shrink-0 items-center gap-2 border-t border-soft pr-1 pl-2.5">
+          {!plain && (
+            <Segmented
+              small
+              label="Show"
+              value={source ? "source" : "rendered"}
+              items={VIEWS}
+              onChange={(view) => setSource(view === "source")}
+            />
+          )}
           {onShowOnPage && (
             <button
               type="button"
               onClick={onShowOnPage}
-              className={cn(GHOST, "-my-1 -mr-1 text-foreground")}
+              className={cn(GHOST, "ml-auto text-foreground")}
             >
               Show on page
             </button>
           )}
         </div>
-      </div>
+      )}
     </section>
   );
 }

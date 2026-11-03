@@ -5,14 +5,7 @@ import type { ElementType } from "@mixedbread/sdk/resources/parsing/jobs";
 import { cn } from "cn";
 import { ChevronDownIcon, ChevronUpIcon, SquareDashedIcon } from "lucide-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import {
-  type CSSProperties,
-  memo,
-  Suspense,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type CSSProperties, memo, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { GHOST_ICON } from "@/components/controls";
 import {
@@ -100,8 +93,10 @@ export default function DocumentPages({
 
   return (
     <div className="relative h-full min-h-0">
+      {/* Without suspense, so nothing waits on the file but the drawing */}
       {kind === "pdf" && (
         <Document
+          suspense={false}
           file={fileUrl}
           options={PDF_OPTIONS}
           onLoadSuccess={setPdf}
@@ -281,21 +276,19 @@ const Sheet = memo(function Sheet({
       )}
     >
       {near && width > 0 && pdf && (
-        // Page suspends while it loads; its own boundary keeps that from
-        // tearing down every other page's canvas
-        <Suspense fallback={null}>
-          <Page
-            pdf={pdf}
-            pageNumber={page.number}
-            width={width}
-            devicePixelRatio={Math.min(devicePixelRatio, MAX_PIXEL_RATIO)}
-            renderTextLayer={false}
-            renderAnnotationLayer={false}
-            loading={null}
-            onRenderSuccess={() => setDrawn(true)}
-            className="absolute! inset-0 overflow-hidden rounded-[3px] [&_canvas]:h-full! [&_canvas]:w-full!"
-          />
-        </Suspense>
+        // Suspending would tear down every other page's canvas as it loads
+        <Page
+          suspense={false}
+          pdf={pdf}
+          pageNumber={page.number}
+          width={width}
+          devicePixelRatio={Math.min(devicePixelRatio, MAX_PIXEL_RATIO)}
+          renderTextLayer={false}
+          renderAnnotationLayer={false}
+          loading={null}
+          onRenderSuccess={() => setDrawn(true)}
+          className="absolute! inset-0 overflow-hidden rounded-[3px] [&_canvas]:h-full! [&_canvas]:w-full!"
+        />
       )}
       {image && (
         <img

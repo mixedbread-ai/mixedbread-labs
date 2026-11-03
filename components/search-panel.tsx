@@ -113,7 +113,7 @@ function Hits({ response }: { response: DocSearchResponse }) {
   const top = response.hits[0]?.score || 1;
   return (
     <>
-      <p className="mb-1 px-3 font-mono text-[11px] text-muted-foreground tabular-nums motion-safe:animate-swap-in">
+      <p className="mb-1 px-3 text-xs text-muted-foreground tabular-nums motion-safe:animate-swap-in">
         {response.hits.length} results in {response.ms} ms
       </p>
       <ol className="flex flex-col">
@@ -151,7 +151,7 @@ function Hit({
               style={{ transform: `scaleX(${relevance})` }}
             />
           </span>
-          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {hit.score.toFixed(2)}
           </span>
         </>

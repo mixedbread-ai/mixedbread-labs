@@ -19,14 +19,15 @@ export function ShareButton({ className }: { className?: string }) {
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      className={cn(BUTTON, className)}
+      // Only the icon on phones, where the header has room for little else
+      className={cn(BUTTON, "max-sm:w-8 max-sm:px-0", className)}
     >
       <IconSwap
         state={copied ? "b" : "a"}
         a={<LinkIcon className="size-3.5" />}
         b={<CheckIcon className="size-3.5" />}
       />
-      {copied ? "Copied" : "Share"}
+      <span className="max-sm:sr-only">{copied ? "Copied" : "Share"}</span>
     </button>
   );
 }

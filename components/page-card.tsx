@@ -68,9 +68,12 @@ export function PageCard({
           onOpenChange?.(next);
         }}
         data-highlighted={highlighted || undefined}
-        className="group relative flex gap-4 rounded-xl p-3 ring-logo/0 transition-[background-color,box-shadow] duration-300 hover:bg-muted/40 data-highlighted:bg-logo/8 data-highlighted:ring-2 data-highlighted:ring-logo/40 data-open:bg-muted/30"
+        className="group relative flex rounded-xl p-3 ring-logo/0 transition-[background-color,box-shadow] duration-300 hover:bg-muted/40 data-highlighted:bg-logo/8 data-highlighted:ring-2 data-highlighted:ring-logo/40 data-open:bg-muted/30"
       >
-        <Thumbnail view={page.view} label={label} />
+        {/* On a phone the opened page takes the thumbnail's column too */}
+        <span className="mr-4 flex w-12 shrink-0 self-start transition-[width,margin,opacity] duration-250 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none max-sm:group-data-open:mr-0 max-sm:group-data-open:w-0 max-sm:group-data-open:opacity-0">
+          <Thumbnail view={page.view} label={label} />
+        </span>
         <div className="flex min-w-0 flex-1 flex-col">
           <CollapsibleTrigger className="flex w-full flex-col text-left outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-ring">
             <span className="flex items-center gap-2 text-[13px]">

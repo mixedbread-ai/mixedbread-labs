@@ -305,7 +305,7 @@ function Run({ calls }: { calls: { id: string; call: DocCall }[] }) {
             </span>
           )}
           {!running && (
-            <span className="shrink-0 font-mono text-[11px] text-muted-foreground/70 tabular-nums motion-safe:animate-swap-in">
+            <span className="shrink-0 text-xs text-muted-foreground/70 tabular-nums motion-safe:animate-swap-in">
               {plural(hits, "result")} · {seconds(end - start)}
             </span>
           )}
