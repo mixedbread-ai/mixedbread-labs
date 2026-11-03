@@ -1,0 +1,509 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.25rem;
+  /* Lightness of the element type colors in parse results */
+  --type-l: 0.6;
+  --logo-yellow: oklch(0.79 0.17 76);
+  --logo-pink: oklch(0.74 0.18 14);
+  --logo-orange: oklch(0.64 0.2 39);
+  --logo-orange-accent: oklch(0.6 0.18 39);
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.141 0.005 285.823);
+  --primary-foreground: oklch(0.98 0.016 73.684);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: var(--logo-orange);
+
+  --sidebar: oklch(0.985 0.001 286.375);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--logo-orange);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--logo-orange);
+
+  --chart-1: oklch(0.64 0.2 39);
+  --chart-2: oklch(0.74 0.18 14);
+  --chart-3: oklch(0.86 0.15 85);
+  --chart-4: oklch(0.78 0.12 51);
+  --chart-5: oklch(0.8 0.12 14);
+}
+
+.dark {
+  --logo-orange-accent: oklch(0.45 0.13 39);
+  --type-l: 0.72;
+
+  --background: oklch(0 0 0);
+  --foreground: oklch(0.98 0 106.42);
+  --card: oklch(0.15 0 49.25);
+  --card-foreground: oklch(0.98 0 106.42);
+  --popover: oklch(0.15 0 49.25);
+  --popover-foreground: oklch(0.98 0 106.42);
+  --primary: var(--logo-orange);
+  --primary-foreground: oklch(0.98 0 106.42);
+  --secondary: oklch(0.32 0 39.42);
+  --secondary-foreground: oklch(0.98 0 106.42);
+  --muted: oklch(0.27 0.01 34.3);
+  --muted-foreground: oklch(0.72 0.01 56.26);
+  --accent: oklch(0.27 0.01 34.3);
+  --accent-foreground: oklch(0.98 0 106.42);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(0.27 0.01 34.3);
+  --input: oklch(0.27 0.01 34.3);
+  --ring: var(--logo-orange);
+
+  --chart-1: var(--logo-orange);
+  --chart-2: oklch(0.74 0.18 14);
+  --chart-3: oklch(0.86 0.15 85);
+  --chart-4: oklch(0.78 0.12 51);
+  --chart-5: oklch(0.8 0.12 14);
+
+  --sidebar: oklch(0.17 0.005 49.25);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--logo-orange);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--logo-orange);
+
+  --fd-primary: var(--logo-orange);
+}
+
+@theme inline {
+  --breakpoint-xs: 28.125rem;
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-5xl: calc(var(--radius) + 20px);
+
+  --color-logo: var(--logo-orange);
+  --color-logo-accent: var(--logo-orange-accent);
+  --color-logo-yellow: var(--logo-yellow);
+  --color-logo-pink: var(--logo-pink);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* quad - cubic - quart - quint - expo - circ (weakest to strongest) */
+
+  --ease-in-quad: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  --ease-in-cubic: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --ease-in-quart: cubic-bezier(0.895, 0.03, 0.685, 0.22);
+  --ease-in-quint: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+  --ease-in-expo: cubic-bezier(0.95, 0.05, 0.795, 0.035);
+  --ease-in-circ: cubic-bezier(0.6, 0.04, 0.98, 0.335);
+
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-out-circ: cubic-bezier(0.075, 0.82, 0.165, 1);
+
+  --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-in-out-quint: cubic-bezier(0.86, 0, 0.07, 1);
+  --ease-in-out-expo: cubic-bezier(1, 0, 0, 1);
+  --ease-in-out-circ: cubic-bezier(0.785, 0.135, 0.15, 0.86);
+
+  @keyframes aurora {
+    from {
+      background-position:
+        50% 50%,
+        50% 50%;
+    }
+    to {
+      background-position:
+        350% 50%,
+        350% 50%;
+    }
+  }
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in-top {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+
+  @keyframes spin-reverse {
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-200px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(200px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-out-left {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(-200px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-out-right {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(200px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-in-bottom {
+    from {
+      transform: translateY(200px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes shimmer-slide {
+    to {
+      transform: translate(calc(100cqw - 100%), 0);
+    }
+  }
+
+  @keyframes spin-around {
+    0% {
+      transform: translateZ(0) rotate(0);
+    }
+    15%,
+    35% {
+      transform: translateZ(0) rotate(90deg);
+    }
+    65%,
+    85% {
+      transform: translateZ(0) rotate(270deg);
+    }
+    100% {
+      transform: translateZ(0) rotate(360deg);
+    }
+  }
+
+  --blink-duration: 1s;
+  --fade-in-duration: 0.25s;
+  --spin-duration: 1s;
+  --slide-in-duration: 0.25s;
+  --shimmer-speed: 3s;
+
+  --animate-shimmer-slide: shimmer-slide var(--shimmer-speed) ease-in-out
+    infinite alternate;
+  --animate-spin-around: spin-around calc(var(--shimmer-speed) * 2) infinite
+    linear;
+
+  --animate-marquee: marquee var(--duration) linear infinite;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-aurora: aurora 60s linear infinite;
+  --animate-blink: blink var(--blink-duration) step-end infinite;
+  --animate-fade-in: fade-in var(--fade-in-duration) linear forwards;
+  --animate-fade-in-top: fade-in-top var(--fade-in-duration) linear forwards;
+  --animate-spin-slow: spin 4s linear infinite;
+  --animate-spin-slower: spin 6s linear infinite;
+  --animate-spin-reverse: spin-reverse var(--spin-duration) linear infinite;
+  --animate-spin-reverse-slow: spin-reverse 4s linear infinite;
+  --animate-spin-reverse-slower: spin-reverse 6s linear infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+  --animate-slide-in-left: slide-in-left var(--slide-in-duration) ease;
+  --animate-slide-in-right: slide-in-right var(--slide-in-duration) ease;
+  --animate-slide-out-left: slide-out-left var(--slide-in-duration) ease;
+  --animate-slide-out-right: slide-out-right var(--slide-in-duration) ease;
+  --animate-slide-in-bottom: slide-in-bottom var(--slide-in-duration) ease;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    text-rendering: optimizelegibility;
+    color-scheme: dark light;
+  }
+  ::selection {
+    color: white;
+    background: rgb(202, 96, 39);
+  }
+}
+
+/* The marketing site's soft rules and elevations */
+:root {
+  --soft: oklch(0.141 0.005 285.823 / 0.1);
+  --elevation-raised:
+    0 1px 1px oklch(0.141 0.005 285.823 / 0.04),
+    0 2px 6px -2px oklch(0.141 0.005 285.823 / 0.06);
+  --elevation-float:
+    0 0 0 1px oklch(0.141 0.005 285.823 / 0.07),
+    0 2px 4px -1px oklch(0.141 0.005 285.823 / 0.05),
+    0 12px 32px -8px oklch(0.141 0.005 285.823 / 0.16);
+  --elevation-composer:
+    0 1px 2px oklch(0.141 0.005 285.823 / 0.04),
+    0 6px 16px -6px oklch(0.141 0.005 285.823 / 0.08),
+    0 24px 48px -24px oklch(0.141 0.005 285.823 / 0.14);
+}
+
+.dark {
+  --soft: oklch(0.98 0 106.42 / 0.15);
+  --elevation-raised:
+    inset 0 1px 0 oklch(1 0 0 / 0.04), 0 1px 2px oklch(0 0 0 / 0.3);
+  --elevation-float:
+    inset 0 1px 0 oklch(1 0 0 / 0.05), 0 0 0 1px oklch(0.98 0 106.42 / 0.08),
+    0 16px 40px -8px oklch(0 0 0 / 0.6);
+  --elevation-composer:
+    inset 0 1px 0 oklch(1 0 0 / 0.05), 0 1px 2px oklch(0 0 0 / 0.3),
+    0 24px 48px -20px oklch(0 0 0 / 0.55);
+}
+
+@theme inline {
+  --color-soft: var(--soft);
+  --shadow-raised: var(--elevation-raised);
+  --shadow-float: var(--elevation-float);
+  --shadow-composer: var(--elevation-composer);
+}
+
+/* A notch smaller on desktop, like the marketing site: scaling the root font
+   size scales everything Tailwind sizes in rem */
+@media (min-width: 64rem) {
+  html {
+    font-size: 90%;
+  }
+}
+
+/* Motion follows Mixedbread Chat: new content rises in, changed text swaps
+   in, a running step's dot breathes until it pops done, and Toast bobs while
+   it works */
+@theme {
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 8px;
+      filter: blur(4px);
+    }
+  }
+
+  @keyframes swap-in {
+    from {
+      opacity: 0;
+      translate: 0 4px;
+    }
+  }
+
+  @keyframes breathe {
+    50% {
+      opacity: 0.45;
+      scale: 0.8;
+    }
+  }
+
+  @keyframes pop {
+    from {
+      scale: 1.6;
+    }
+  }
+
+  @keyframes toast-bob {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-4deg);
+    }
+    50% {
+      transform: translateY(-2px) rotate(4deg);
+    }
+  }
+
+  --animate-rise: rise 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  --animate-swap-in: swap-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  --animate-breathe: breathe 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  --animate-pop: pop 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-toast-bob: toast-bob 2.4s ease-in-out infinite;
+}
+
+/* Scrolled content fades out at the edges instead of being cut */
+/* A running step's label, a light sweeping across it with `animate-shimmer`, as in Mixedbread Chat */
+@utility text-shimmer {
+  background:
+    linear-gradient(
+      90deg,
+      var(--muted-foreground) 0%,
+      var(--muted-foreground) 35%,
+      var(--foreground) 50%,
+      var(--muted-foreground) 65%,
+      var(--muted-foreground) 100%
+    )
+    0 0 / 200% 100%;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility fade-x {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 1rem,
+    #000 calc(100% - 1rem),
+    transparent
+  );
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+}
+
+@utility fade-y {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 1.25rem,
+    #000 calc(100% - 1.5rem),
+    transparent
+  );
+}
