@@ -44,12 +44,13 @@ export interface Selection {
  * its blank sheets.
  */
 export default function DocumentPages({
-  fileUrl,
+  file,
   kind,
   pages,
   selection,
 }: {
-  fileUrl: string;
+  /** Its address, or the uploader's own copy, which needs no download */
+  file: string | File;
   kind: "pdf" | "image" | "none";
   pages: ParsedPage[];
   selection: Selection;
@@ -62,6 +63,7 @@ export default function DocumentPages({
   const [current, setCurrent] = useState(1);
   const [boxes, setBoxes] = useState(true);
   const blank = kind === "none" || failed;
+  const image = useAddress(file);
 
   function go(page: number) {
     scrollToView(document.getElementById(`page-${page}`), "start");
@@ -93,7 +95,7 @@ export default function DocumentPages({
       {kind === "pdf" && (
         <Document
           suspense={false}
-          file={fileUrl}
+          file={file}
           options={PDF_OPTIONS}
           onLoadSuccess={setPdf}
           onLoadError={() => setFailed(true)}
@@ -133,7 +135,7 @@ export default function DocumentPages({
                 root={scroller}
                 pdf={blank ? null : pdf}
                 image={
-                  kind === "image" && page.number === 1 ? fileUrl : undefined
+                  kind === "image" && page.number === 1 ? image : undefined
                 }
                 waiting={!blank && kind === "pdf" && !pdf}
                 boxes={boxes}
@@ -180,6 +182,18 @@ export default function DocumentPages({
       </div>
     </div>
   );
+}
+
+/** An address for the file: its own, or one in this tab for the uploader's copy */
+function useAddress(file: string | File): string | undefined {
+  const [address, setAddress] = useState<string>();
+  useEffect(() => {
+    if (typeof file === "string") return setAddress(file);
+    const url = URL.createObjectURL(file);
+    setAddress(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  return address;
 }
 
 /** The width of what `ref` holds: the pages' column */

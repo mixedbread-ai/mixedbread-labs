@@ -29,6 +29,7 @@ import {
 } from "@/lib/parse";
 import { errorMessage } from "@/lib/request";
 import { plural } from "@/lib/text";
+import { uploadedFile } from "@/lib/upload";
 import type { Selection } from "./document";
 import { Detail, Inspector, type InspectorTab } from "./inspector";
 import { OptionsForm } from "./options";
@@ -168,7 +169,7 @@ export function ParseView({
           )}
         >
           <DocumentPages
-            fileUrl={`/api/files/${job.file_id}`}
+            file={uploadedFile(job.file_id) ?? `/api/files/${job.file_id}`}
             kind={kindOf(filename)}
             pages={pages}
             selection={selection}

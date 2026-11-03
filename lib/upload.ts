@@ -3,6 +3,14 @@ import { postJson } from "./request";
 
 const CONCURRENT_PARTS = 4;
 
+// What this tab uploaded, by file id: its result draws from these instead of
+// downloading the file back
+const uploaded = new Map<string, File>();
+
+export function uploadedFile(id: string): File | undefined {
+  return uploaded.get(id);
+}
+
 /**
  * Uploads a file straight to storage, part by part, through links the server
  * signs; `onProgress` hears the share sent so far
@@ -41,9 +49,11 @@ export async function uploadFile(
     Array.from({ length: Math.min(CONCURRENT_PARTS, queue.length) }, worker)
   );
 
-  return postJson<UploadedFile>(`/api/uploads/${upload.id}`, {
+  const result = await postJson<UploadedFile>(`/api/uploads/${upload.id}`, {
     parts: done.toSorted((a, b) => a.part_number - b.part_number),
   });
+  uploaded.set(result.id, file);
+  return result;
 }
 
 /** XHR rather than fetch, as only it reports upload progress */
