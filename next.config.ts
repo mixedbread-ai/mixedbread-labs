@@ -18,6 +18,8 @@ const CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Clear of the sidebar's footer
+  devIndicators: { position: "bottom-right" },
   experimental: {
     // A parse result never changes and a chat polls its own state, so pages
     // visited in the last minutes open from the client cache

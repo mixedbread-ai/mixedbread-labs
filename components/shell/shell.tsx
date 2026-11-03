@@ -1,6 +1,8 @@
 "use client";
 
 import { Drawer } from "@base-ui/react/drawer";
+import { Toggle } from "@base-ui/react/toggle";
+import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { cn } from "cn";
 import {
   ArrowUpRightIcon,
@@ -8,6 +10,7 @@ import {
   FileSearchIcon,
   type LucideIcon,
   MessageCirclePlusIcon,
+  MonitorIcon,
   MoonIcon,
   PanelLeftIcon,
   SunIcon,
@@ -16,7 +19,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import type { ReactNode } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { FOCUS, GHOST_ICON } from "@/components/controls";
 import { HoverArea } from "@/components/ui/hover-area";
 import { type HistoryEntry, useHistory } from "@/lib/history";
@@ -102,20 +110,20 @@ function SidebarContent() {
         )}
       </div>
 
-      <HoverArea className="flex shrink-0 flex-col gap-px p-2">
+      {/* One row, as Bread Chat ends its sidebar: a way out, and the theme */}
+      <div className="flex shrink-0 items-center gap-2 p-2">
         <a
-          data-row=""
           href="https://www.mixedbread.com/docs"
           target="_blank"
           rel="noopener"
-          className={cn(ROW, "group/docs")}
+          className={cn(ROW, "group/docs min-w-0 flex-1 hover:bg-soft")}
         >
           <BookOpenIcon />
           Docs
-          <ArrowUpRightIcon className="ml-auto size-3.5! opacity-0 transition-opacity group-hover/docs:opacity-100" />
+          <ArrowUpRightIcon className="size-3.5! opacity-0 transition-opacity group-hover/docs:opacity-60" />
         </a>
-        <ThemeRow />
-      </HoverArea>
+        <ThemeSwitch />
+      </div>
     </>
   );
 }
@@ -186,21 +194,67 @@ function History({
   );
 }
 
-function ThemeRow() {
-  const { resolvedTheme, setTheme } = useTheme();
+const noop = () => () => {};
+
+const THEMES = [
+  { value: "system", label: "System", Icon: MonitorIcon, turn: "0deg" },
+  { value: "light", label: "Light", Icon: SunIcon, turn: "-90deg" },
+  { value: "dark", label: "Dark", Icon: MoonIcon, turn: "40deg" },
+] as const;
+
+/** Bread Chat's theme switch: three icons on a track, the picked one raised */
+function ThemeSwitch() {
+  const { theme: stored, setTheme } = useTheme();
+  // The saved theme is the browser's alone, so the server renders none
+  const mounted = useSyncExternalStore(
+    noop,
+    () => true,
+    () => false
+  );
+  const theme = mounted ? stored : undefined;
+  // Icons turn when picked here, not on the first paint
+  const [picked, setPicked] = useState(false);
+  const index = THEMES.findIndex(({ value }) => value === theme);
 
   return (
-    <button
-      type="button"
-      data-row=""
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className={ROW}
+    <ToggleGroup
+      aria-label="Theme"
+      value={theme ? [theme] : []}
+      onValueChange={([next]) => {
+        if (!next) return;
+        setPicked(true);
+        setTheme(next);
+      }}
+      className="relative flex shrink-0 rounded-full bg-soft p-0.5"
     >
-      <SunIcon className="dark:hidden" />
-      <MoonIcon className="not-dark:hidden" />
-      <span className="dark:hidden">Light theme</span>
-      <span className="not-dark:hidden">Dark theme</span>
-    </button>
+      {index >= 0 && (
+        <span
+          aria-hidden="true"
+          style={{ translate: `${index * 100}% 0` }}
+          className="absolute top-0.5 left-0.5 size-7 rounded-full bg-popover shadow-raised transition-[translate] duration-300 ease-smooth motion-reduce:transition-none"
+        />
+      )}
+      {THEMES.map(({ value, label, Icon, turn }) => (
+        <Toggle
+          key={value}
+          value={value}
+          aria-label={label}
+          style={{ "--turn": turn } as CSSProperties}
+          className={cn(
+            "group/theme relative flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:text-foreground data-pressed:text-foreground",
+            FOCUS
+          )}
+        >
+          <Icon
+            className={cn(
+              "size-3.5",
+              picked &&
+                "group-data-pressed/theme:motion-safe:animate-theme-turn"
+            )}
+          />
+        </Toggle>
+      ))}
+    </ToggleGroup>
   );
 }
 
