@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       ...body.data,
       chunking_strategy: "page",
     });
-    return NextResponse.json({ id: job.id });
+    return NextResponse.json(job);
   } catch (error) {
     return apiError(error);
   }

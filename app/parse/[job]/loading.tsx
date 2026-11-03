@@ -1,14 +1,28 @@
+"use client";
+
+import { useParams } from "next/navigation";
+import { ParsePending } from "@/components/parse/pending";
 import { PageHeader } from "@/components/shell/shell";
 import { Bone } from "@/components/skeleton";
+import { startedJob } from "@/lib/parse";
 
 const ROWS = 14;
+
+/**
+ * A job this tab just started shows queued, as its page will; any other link
+ * shows the result's bones
+ */
+export default function Loading() {
+  const job = startedJob(useParams<{ job: string }>().job);
+  return job ? <ParsePending job={job} /> : <ResultBones />;
+}
 
 /**
  * The parse view while its result loads, laid out as the view is: the header
  * and its actions, the page in its well, and the inspector's tabs, filter and
  * rows on the same grid as the real ones
  */
-export default function Loading() {
+function ResultBones() {
   return (
     <>
       <PageHeader
