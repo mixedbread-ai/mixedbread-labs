@@ -34,7 +34,7 @@ const MAX_WIDTH = 820;
 export interface Selection {
   selected: string | null;
   hidden: readonly ElementType[];
-  onSelect: (id: string, from: "page" | "list") => void;
+  onSelect: (id: string, from: "page" | "inspector") => void;
 }
 
 /**
@@ -322,7 +322,7 @@ const Sheet = memo(function Sheet({
   );
 });
 
-/** An element's box; hovering lights it and its row, clicking selects it */
+/** An element's box; hovering lights it, its row and its text, clicking selects it */
 const Box = memo(function Box({
   element,
   selected,
@@ -343,7 +343,7 @@ const Box = memo(function Box({
     <div
       id={`box-${element.id}`}
       data-element={element.id}
-      data-twin={`row-${element.id}`}
+      data-twin={`row-${element.id} text-${element.id}`}
       data-selected={selected || undefined}
       style={style}
       className="group absolute cursor-pointer scroll-my-24 rounded-[2px] bg-(--c)/5 outline-1 outline-(--c)/45 transition-[background-color,outline-color] duration-150 hover:bg-(--c)/12 hover:outline-(--c) data-linked:bg-(--c)/14 data-linked:outline-(--c) data-selected:z-10 data-selected:bg-(--c)/14 data-selected:outline-2 data-selected:outline-offset-1 data-selected:outline-(--c)"

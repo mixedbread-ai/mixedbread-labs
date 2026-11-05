@@ -21,7 +21,6 @@ import {
   memo,
   type ReactNode,
   useDeferredValue,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -42,14 +41,15 @@ import {
   ELEMENT_TYPES,
   type ParsedElement,
   type ParsedPage,
+  type TextPart,
   typeColor,
   typeOf,
 } from "@/lib/parse";
 import type { Selection } from "./document";
-import { ParsedContent, preloadParsedContent } from "./parsed-content";
+import { ParsedContent } from "./parsed-content";
 import { elementAt, linkTwins } from "./twins";
 
-export type InspectorTab = "elements" | "text" | "json";
+export type InspectorTab = "text" | "elements" | "json";
 
 /** How parsed content shows: as it reads, or as the parser wrote it */
 const VIEWS = [
@@ -60,10 +60,11 @@ const VIEWS = [
 /** A bar above a tab's content */
 const BAR = "flex h-10 shrink-0 items-center gap-1 px-1";
 
-/** What the parser returned, three ways: element by element, as text, and as the API sent it */
+/** What the parser returned, three ways: as text, element by element, and as the API sent it */
 export function Inspector({
   result,
   pages,
+  texts,
   filename,
   tab,
   onTabChange,
@@ -73,6 +74,7 @@ export function Inspector({
 }: {
   result: DocumentParserResult;
   pages: ParsedPage[];
+  texts: TextPart[][];
   filename: string;
   tab: InspectorTab;
   onTabChange: (tab: InspectorTab) => void;
@@ -81,7 +83,9 @@ export function Inspector({
   detail?: ReactNode;
   onHiddenChange: (hidden: ElementType[]) => void;
 }) {
-  useEffect(preloadParsedContent, []);
+  // The list is built when first opened, as the text shows first
+  const [listed, setListed] = useState(tab === "elements");
+  if (tab === "elements" && !listed) setListed(true);
 
   return (
     <Tabs.Root
@@ -91,16 +95,30 @@ export function Inspector({
     >
       {/* Phones switch views from one row above both panes instead */}
       <SegmentList className="flex shrink-0 max-md:hidden">
-        {["Elements", "Text", "JSON"].map((label) => (
+        {["Text", "Elements", "JSON"].map((label) => (
           <Tabs.Tab key={label} value={label.toLowerCase()} className={SEGMENT}>
             {label}
           </Tabs.Tab>
         ))}
       </SegmentList>
-      {/* Kept while other tabs show, so coming back doesn't rebuild every row */}
+      {/* Kept while other tabs show, so coming back rebuilds no rows or pages
+          and finds its place */}
+      <Tabs.Panel
+        value="text"
+        keepMounted
+        className="flex min-h-0 flex-1 flex-col data-hidden:hidden"
+      >
+        <TextView
+          result={result}
+          texts={texts}
+          filename={filename}
+          active={tab === "text"}
+          selection={selection}
+        />
+      </Tabs.Panel>
       <Tabs.Panel
         value="elements"
-        keepMounted
+        keepMounted={listed}
         className="flex min-h-0 flex-1 flex-col data-hidden:hidden"
       >
         <Elements
@@ -109,9 +127,6 @@ export function Inspector({
           onHiddenChange={onHiddenChange}
         />
         {detail}
-      </Tabs.Panel>
-      <Tabs.Panel value="text" className="flex min-h-0 flex-1 flex-col">
-        <TextView result={result} filename={filename} />
       </Tabs.Panel>
       <Tabs.Panel value="json" className="flex min-h-0 flex-1 flex-col">
         <JsonView result={result} filename={filename} />
@@ -179,7 +194,7 @@ function Elements({
             ref={linkTwins}
             onClick={(e) => {
               const id = elementAt(e.target);
-              if (id) selection.onSelect(id, "list");
+              if (id) selection.onSelect(id, "inspector");
             }}
             className="flex flex-col"
           >
@@ -464,14 +479,31 @@ const EXTENSIONS = { markdown: "md", html: "html", plain: "txt" } as const;
 /** The document's text page by page, as it reads or as the parser wrote it */
 function TextView({
   result,
+  texts,
   filename,
+  active,
+  selection,
 }: {
   result: DocumentParserResult;
+  texts: TextPart[][];
   filename: string;
+  active: boolean;
+  selection: Selection;
 }) {
   const [source, setSource] = useState(false);
   const [pages, setPages] = useState(PAGES_AT_ONCE);
+  const { selected } = selection;
   const format = result.return_format;
+
+  // The selected element's page shows before anything scrolls to it
+  const needed =
+    active && selected
+      ? texts.findIndex((parts) =>
+          parts.some((part) => part.element?.id === selected)
+        ) + 1
+      : 0;
+  if (needed > pages) setPages(needed);
+
   const plain = format === "plain";
   const all = () =>
     result.chunks.reduce(
@@ -502,34 +534,92 @@ function TextView({
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-4">
-        {result.chunks.slice(0, pages).map((chunk, index) => {
-          const content = chunk.content ?? chunk.content_to_embed;
-          return (
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: the element list is the keyboard path to every element */}
+        <div
+          ref={linkTwins}
+          onClick={(e) => {
+            // Selecting words to copy, or following a link, picks no element
+            if (
+              !getSelection()?.isCollapsed ||
+              (e.target as Element).closest("a")
+            ) {
+              return;
+            }
+            const id = elementAt(e.target);
+            if (id) selection.onSelect(id, "inspector");
+          }}
+        >
+          {texts.slice(0, pages).map((parts, index) => (
             <section
               key={index}
               aria-label={`Page ${index + 1}`}
-              className="flex flex-col gap-2 py-4"
+              className="flex flex-col gap-1 py-4"
             >
               <h2 className="text-[11px] text-muted-foreground tabular-nums">
                 Page {index + 1}
               </h2>
-              {source || format === "plain" ? (
-                <pre className="font-mono text-xs leading-5 break-words whitespace-pre-wrap">
-                  {content}
-                </pre>
-              ) : (
-                <ParsedContent content={content} format={format} />
-              )}
+              <div>
+                {parts.map((part, at) => (
+                  <Passage
+                    key={at}
+                    part={part}
+                    format={format}
+                    source={source}
+                    selected={part.element?.id === selected}
+                  />
+                ))}
+              </div>
             </section>
-          );
-        })}
-        {pages < result.chunks.length && (
+          ))}
+        </div>
+        {pages < texts.length && (
           <div ref={onNear(() => setPages((count) => count + PAGES_AT_ONCE))} />
         )}
       </div>
     </>
   );
 }
+
+/**
+ * A stretch of the text; hovering lights it and its box, clicking selects it.
+ * An element with no text holds its place, showing so only once selected.
+ */
+const Passage = memo(function Passage({
+  part: { element, text },
+  format,
+  source,
+  selected,
+}: {
+  part: TextPart;
+  format: ReturnFormat;
+  source: boolean;
+  selected: boolean;
+}) {
+  // Padding apart, passages keep the spacing their blocks have within a page:
+  // a heading further from what's before it, nearer what follows
+  return (
+    <div
+      id={element && `text-${element.id}`}
+      data-element={element?.id}
+      data-twin={element && `box-${element.id}`}
+      data-selected={selected || undefined}
+      style={element && ({ "--c": typeColor(element.type) } as CSSProperties)}
+      className="-mx-1 scroll-mt-1 rounded-lg p-1 transition-[background-color] duration-150 empty:py-0 has-[h3]:-mb-0.5 not-first:has-[h3,pre]:mt-3 not-first:has-[table]:mt-2 not-last:has-[table]:mb-2 data-element:hover:bg-[oklch(from_var(--foreground)_l_c_h/0.055)] data-linked:bg-[oklch(from_var(--foreground)_l_c_h/0.055)] data-selected:bg-(--c)/12 data-element:data-selected:hover:bg-(--c)/12"
+    >
+      {!text ? (
+        selected && (
+          <p className="text-[13px] text-muted-foreground italic">No text</p>
+        )
+      ) : source || format === "plain" ? (
+        <pre className="font-mono text-xs leading-5 break-words whitespace-pre-wrap">
+          {text}
+        </pre>
+      ) : (
+        <ParsedContent content={text} format={format} />
+      )}
+    </div>
+  );
+});
 
 // Pages of text render a few at a time as the reader nears them
 const PAGES_AT_ONCE = 3;

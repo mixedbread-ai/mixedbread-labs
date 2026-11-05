@@ -102,15 +102,28 @@ export interface ParsedPage {
   elements: ParsedElement[];
 }
 
-/** The result's elements by page, each placed in fractions of its page */
-export function pagesOf(result: DocumentParserResult): ParsedPage[] {
+/** A stretch of a page's text, which reads one element where it was found in it */
+export interface TextPart {
+  element?: ParsedElement;
+  text: string;
+}
+
+/**
+ * The result's elements by page, each placed in fractions of its page, and
+ * each chunk's text cut at those elements
+ */
+export function readResult(result: DocumentParserResult): {
+  pages: ParsedPage[];
+  texts: TextPart[][];
+} {
   const pages: ParsedPage[] = (result.page_sizes ?? []).map((size, index) => ({
     number: index + 1,
     width: Number(size[0]) || 1,
     height: Number(size[1]) || 1,
     elements: [],
   }));
-  for (const chunk of result.chunks) {
+  const texts = result.chunks.map((chunk) => {
+    const parsed: ParsedElement[] = [];
     for (const element of chunk.elements) {
       let page = pages[element.page - 1];
       if (!page) {
@@ -119,7 +132,7 @@ export function pagesOf(result: DocumentParserResult): ParsedPage[] {
       }
       const [left = 0, top = 0, right = 0, bottom = 0] =
         element.bbox.map(Number);
-      page.elements.push({
+      const entry: ParsedElement = {
         id: `${element.page}-${page.elements.length}`,
         type: element.type,
         confidence: element.confidence,
@@ -136,10 +149,38 @@ export function pagesOf(result: DocumentParserResult): ParsedPage[] {
         content: element.content,
         summary: element.summary,
         image: element.image,
-      });
+      };
+      page.elements.push(entry);
+      parsed.push(entry);
     }
+    return cutText(chunk.content ?? chunk.content_to_embed, parsed);
+  });
+  return { pages: pages.filter(Boolean), texts };
+}
+
+/**
+ * Cuts text at the blank line after each element, in reading order, so what
+ * the parser wrote around them stays whole: a heading's `## `, an HTML tag. An
+ * element not found, or with no text, keeps its place with an empty part.
+ */
+function cutText(text: string, elements: ParsedElement[]): TextPart[] {
+  const parts: TextPart[] = [];
+  let from = 0;
+  for (const element of elements) {
+    const content = element.content.trim();
+    const at = content ? text.indexOf(content, from) : -1;
+    if (at === -1) {
+      parts.push({ element, text: "" });
+      continue;
+    }
+    const blank = text.indexOf("\n\n", at + content.length);
+    const to = blank === -1 ? text.length : blank;
+    parts.push({ element, text: text.slice(from, to).trim() });
+    from = to;
   }
-  return pages.filter(Boolean);
+  const rest = text.slice(from).trim();
+  if (rest) parts.push({ text: rest });
+  return parts;
 }
 
 /** Inline math as the letters it shows, for one-line previews: `$\mathcal{X}$` reads `X` */

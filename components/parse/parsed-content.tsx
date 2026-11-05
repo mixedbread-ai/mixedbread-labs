@@ -4,9 +4,8 @@ import dynamic from "next/dynamic";
 import { Bone } from "@/components/skeleton";
 
 /**
- * The Markdown and math renderer loads when parsed content first shows, not
- * with the result page: the element list is all of the page until a row is
- * picked or the text is opened
+ * The Markdown and math renderer loads after the result page, whose pages and
+ * bones show without it
  */
 export const ParsedContent = dynamic(
   () => import("./content").then((module) => module.ParsedContent),
@@ -20,8 +19,3 @@ export const ParsedContent = dynamic(
     ),
   }
 );
-
-/** Starts loading the renderer, so it is there by the time it shows */
-export function preloadParsedContent() {
-  void import("./content");
-}

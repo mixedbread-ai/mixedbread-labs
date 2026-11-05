@@ -6,7 +6,8 @@ import { PageHeader } from "@/components/shell/shell";
 import { Bone } from "@/components/skeleton";
 import { startedJob } from "@/lib/parse";
 
-const ROWS = 14;
+const LINES = ["w-full", "w-full", "w-11/12", "w-full", "w-2/3"];
+const PARAGRAPHS = 4;
 
 /**
  * A job this tab just started shows queued, as its page will; any other link
@@ -19,8 +20,8 @@ export default function Loading() {
 
 /**
  * The parse view while its result loads, laid out as the view is: the header
- * and its actions, the page in its well, and the inspector's tabs, filter and
- * rows on the same grid as the real ones
+ * and its actions, the page in its well, and the inspector's tabs, bar and
+ * text on the same sizes as the real ones
  */
 function ResultBones() {
   return (
@@ -41,30 +42,20 @@ function ResultBones() {
         <div className="flex min-h-0 flex-col max-md:hidden">
           {/* The tabs' track: p-0.5 around segments of py-1 and 13px text */}
           <Bone className="h-[2.0625rem] shrink-0 rounded-full" />
-          <div className="flex shrink-0 items-center gap-1 pt-3 pb-2">
-            <Bone className="h-8 flex-1 rounded-lg" />
-            <Bone className="h-8 w-24 rounded-full" />
+          <div className="mt-2 flex h-10 shrink-0 items-center justify-between px-1">
+            <Bone className="h-7 w-[8.625rem] rounded-full" />
+            <Bone className="h-7 w-[9.875rem] rounded-md" />
           </div>
-          {Array.from({ length: ROWS }, (_, index) => (
-            // A row's grid and type sizes, each cell holding a line's height
-            <div
-              key={index}
-              className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.75rem] items-center gap-3 px-2.5 py-1.5"
-            >
-              <span className="flex items-center gap-2 text-xs">
-                <Bone className="size-2" />
-                <Bone className="h-3 w-14" />
-                &nbsp;
-              </span>
-              <span className="flex items-center text-[13px]">
-                <Bone className="h-3.5 w-full" />
-                &nbsp;
-              </span>
-              <span className="flex items-center justify-end text-[11px]">
-                <Bone className="h-3 w-3" />
-              </span>
-            </div>
-          ))}
+          <div className="flex min-h-0 flex-col gap-4 overflow-hidden px-1 py-4">
+            <Bone className="h-3 w-10" />
+            {Array.from({ length: PARAGRAPHS }, (_, paragraph) => (
+              <div key={paragraph} className="flex flex-col gap-2.5">
+                {LINES.map((width, line) => (
+                  <Bone key={line} className={`h-3.5 ${width}`} />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </>

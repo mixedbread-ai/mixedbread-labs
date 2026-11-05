@@ -24,7 +24,7 @@ import {
   type ParsedElement,
   type ParseMode,
   type ParseOptions,
-  pagesOf,
+  readResult,
   startParse,
 } from "@/lib/parse";
 import { errorMessage } from "@/lib/request";
@@ -54,10 +54,10 @@ export function ParseView({
   result: DocumentParserResult;
   mode?: ParseMode;
 }) {
-  const pages = useMemo(() => pagesOf(result), [result]);
+  const { pages, texts } = useMemo(() => readResult(result), [result]);
   const [selected, setSelected] = useState<string | null>(null);
   const [hidden, setHidden] = useState<ElementType[]>([]);
-  const [tab, setTab] = useState<InspectorTab>("elements");
+  const [tab, setTab] = useState<InspectorTab>("text");
   // Phones show one view at a time: the pages, or one of the inspector's tabs
   const [onPage, setOnPage] = useState(true);
   const wide = useWide();
@@ -74,10 +74,20 @@ export function ParseView({
 
   // Selecting on one side brings the element into view on the other, where
   // that side shows; a phone stays on its view and opens the element's card
-  const select = useCallback((id: string, from: "page" | "list") => {
-    setSelected(id);
-    reveal(from === "page" ? `row-${id}` : `box-${id}`);
-  }, []);
+  const select = useCallback(
+    (id: string, from: "page" | "inspector") => {
+      setSelected(id);
+      if (from === "page") revealIn(tab, id);
+      else reveal(`box-${id}`);
+    },
+    [tab]
+  );
+
+  // The selected element may be out of view in the tab that opens
+  function openTab(next: InspectorTab) {
+    setTab(next);
+    if (selected) revealIn(next, selected);
+  }
 
   const selection = useMemo<Selection>(
     () => ({ selected, hidden, onSelect: select }),
@@ -154,7 +164,7 @@ export function ParseView({
         items={VIEWS}
         onChange={(view) => {
           setOnPage(view === "document");
-          if (view !== "document") setTab(view);
+          if (view !== "document") openTab(view);
         }}
         className="mx-2 mb-2 shrink-0 md:hidden"
       />
@@ -184,9 +194,10 @@ export function ParseView({
           <Inspector
             result={result}
             pages={pages}
+            texts={texts}
             filename={filename}
             tab={tab}
-            onTabChange={setTab}
+            onTabChange={openTab}
             selection={selection}
             detail={wide && detail}
             onHiddenChange={setHidden}
@@ -200,16 +211,20 @@ export function ParseView({
 
 const VIEWS: { value: "document" | InspectorTab; label: string }[] = [
   { value: "document", label: "Document" },
-  { value: "elements", label: "Elements" },
   { value: "text", label: "Text" },
+  { value: "elements", label: "Elements" },
   { value: "json", label: "JSON" },
 ];
 
-/** Scrolls an element into the middle of its view, after the render that shows it */
-function reveal(id: string) {
-  requestAnimationFrame(() =>
-    scrollToView(document.getElementById(id), "center")
-  );
+/** Scrolls an element into its view, after the render that shows it */
+function reveal(id: string, block: ScrollLogicalPosition = "center") {
+  requestAnimationFrame(() => scrollToView(document.getElementById(id), block));
+}
+
+/** Brings an element into view in a tab: text from its start, to read on from */
+function revealIn(tab: InspectorTab, id: string) {
+  if (tab === "text") reveal(`text-${id}`, "start");
+  if (tab === "elements") reveal(`row-${id}`);
 }
 
 const WIDE = "(min-width: 48rem)";
