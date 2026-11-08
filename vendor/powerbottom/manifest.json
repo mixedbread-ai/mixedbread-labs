@@ -1,0 +1,25 @@
+{
+  "version": "v0.4.0",
+  "commit": "3d4c571c027897a3fdb32eb8bf43895007c91984",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "wasm-bindgen": "0.2.127",
+  "wasm-opt": "wasm-opt version 133 (version_133)",
+  "files": {
+    "powerbottom_wasm.d.ts": {
+      "bytes": 9528,
+      "sha256": "7b3a7d9a78b23e2dac5fa8957ade1d027f7c49ea5d85311619d3e631bf2f7108"
+    },
+    "powerbottom_wasm.js": {
+      "bytes": 30696,
+      "sha256": "5e70a1f9e5415cf6bc2ab15e22903d556df6695ebdae16f00f4a5b46c1d30dbb"
+    },
+    "powerbottom_wasm_bg.wasm": {
+      "bytes": 13887750,
+      "sha256": "3e07607a1915b497d53bd1622e3cfd8f819144fb7645c9c0636e8fd2e6d659be"
+    },
+    "worker.js": {
+      "bytes": 8026,
+      "sha256": "306cba0806c0d2604d5e60b186d8d62faa8419c5182caac815861a27e599ddac"
+    }
+  }
+}

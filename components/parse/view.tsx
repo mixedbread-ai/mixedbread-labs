@@ -14,6 +14,7 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { BUTTON, POPUP, PRIMARY, Segmented } from "@/components/controls";
 import { ShareButton } from "@/components/share-button";
 import { PageHeader } from "@/components/shell/shell";
+import { formatOf } from "@/lib/files";
 import { useRemember } from "@/lib/history";
 import { scrollToView } from "@/lib/motion";
 import {
@@ -30,18 +31,17 @@ import {
 import { errorMessage } from "@/lib/request";
 import { plural } from "@/lib/text";
 import { uploadedFile } from "@/lib/upload";
-import type { Selection } from "./document";
+import type { PageKind, Selection } from "./document";
 import { Detail, Inspector, type InspectorTab } from "./inspector";
 import { OptionsForm } from "./options";
 
 const DocumentPages = dynamic(() => import("./document"), { ssr: false });
 
 /** How the file's pages can show, from its name, so the page needs no second call for its type */
-function kindOf(filename: string): "pdf" | "image" | "none" {
-  const extension = filename.split(".").pop()?.toLowerCase() ?? "";
-  if (extension === "pdf") return "pdf";
-  if (["png", "jpg", "jpeg", "webp", "gif"].includes(extension)) return "image";
-  return "none";
+function kindOf(filename: string): PageKind {
+  const format = formatOf(filename);
+  if (format === "pdf" || format === "image") return format;
+  return format ? "drawn" : "none";
 }
 
 /** A finished parse: the pages with their elements boxed beside what the parser read */
@@ -179,6 +179,7 @@ export function ParseView({
           )}
         >
           <DocumentPages
+            fileId={job.file_id}
             file={uploadedFile(job.file_id) ?? `/api/files/${job.file_id}`}
             kind={kindOf(filename)}
             pages={pages}

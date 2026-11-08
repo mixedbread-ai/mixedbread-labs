@@ -31,6 +31,9 @@ const PDF_OPTIONS = {
 
 const MAX_WIDTH = 820;
 
+/** Who draws the pages: PDF.js, the image itself, the server, or no one */
+export type PageKind = "pdf" | "image" | "drawn" | "none";
+
 export interface Selection {
   selected: string | null;
   hidden: readonly ElementType[];
@@ -40,18 +43,20 @@ export interface Selection {
 /**
  * The document's pages, each with its elements boxed over it, and floating
  * controls to move between pages. Pages and boxes show at once; a PDF draws
- * into them as it arrives, an image is its own page, and anything else keeps
- * its blank sheets.
+ * into them as it arrives, an image is its own page, and the server draws the
+ * rest as images: Word and PowerPoint pages, SVG and HEIC.
  */
 export default function DocumentPages({
+  fileId,
   file,
   kind,
   pages,
   selection,
 }: {
+  fileId: string;
   /** Its address, or the uploader's own copy, which needs no download */
   file: string | File;
-  kind: "pdf" | "image" | "none";
+  kind: PageKind;
   pages: ParsedPage[];
   selection: Selection;
 }) {
@@ -135,7 +140,11 @@ export default function DocumentPages({
                 root={scroller}
                 pdf={blank ? null : pdf}
                 image={
-                  kind === "image" && page.number === 1 ? image : undefined
+                  kind === "drawn"
+                    ? `/api/files/${fileId}/pages/${page.number}`
+                    : kind === "image" && page.number === 1
+                      ? image
+                      : undefined
                 }
                 waiting={!blank && kind === "pdf" && !pdf}
                 boxes={boxes}
@@ -270,8 +279,9 @@ const Sheet = memo(function Sheet({
   const ref = useRef<HTMLElement>(null);
   const near = useNear(ref, root);
   const [drawn, setDrawn] = useState(false);
-  // A canvas let go is drawn again when the page comes back
-  if (drawn && pdf && !near) setDrawn(false);
+  const [broken, setBroken] = useState(false);
+  // A canvas or image let go is drawn again when the page comes back
+  if (drawn && (pdf || image) && !near) setDrawn(false);
 
   return (
     <section
@@ -282,7 +292,8 @@ const Sheet = memo(function Sheet({
       style={{ aspectRatio: `${page.width} / ${page.height}` }}
       className={cn(
         "relative w-full scroll-mt-4 rounded-[3px] bg-white shadow-raised ring-1 ring-black/5",
-        (waiting || ((pdf || image) && !drawn)) && "motion-safe:animate-pulse"
+        (waiting || ((pdf || image) && !drawn && !broken)) &&
+          "motion-safe:animate-pulse"
       )}
     >
       {near && width > 0 && pdf && (
@@ -300,11 +311,12 @@ const Sheet = memo(function Sheet({
           className="absolute! inset-0 overflow-hidden rounded-[3px] [&_canvas]:h-full! [&_canvas]:w-full!"
         />
       )}
-      {image && (
+      {image && near && !broken && (
         <img
           src={image}
           alt=""
           onLoad={() => setDrawn(true)}
+          onError={() => setBroken(true)}
           className="absolute inset-0 size-full rounded-[3px]"
         />
       )}

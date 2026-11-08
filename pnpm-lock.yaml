@@ -28,6 +28,9 @@ importers:
       cn:
         specifier: 0.5.0
         version: 0.5.0
+      heic-decode:
+        specifier: 2.1.0
+        version: 2.1.0
       katex:
         specifier: 0.16.47
         version: 0.16.47
@@ -52,6 +55,9 @@ importers:
       react-pdf:
         specifier: 11.0.0
         version: 11.0.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      sharp:
+        specifier: 0.35.5
+        version: 0.35.5(@types/node@24.19.2)
       streamdown:
         specifier: 2.7.1
         version: 2.7.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -1495,6 +1501,13 @@ packages:
         integrity: sha512-1ALZXSmCGmW3h8AMz4R4+QKSKFi7sNgXLVwmwB8FYVtl1CwQ3WDkSAEY/d5tp1g/vbQgq2s1WlHgfO3jbw1TsA==,
       }
 
+  heic-decode@2.1.0:
+    resolution:
+      {
+        integrity: sha512-0fB3O3WMk38+PScbHLVp66jcNhsZ/ErtQ6u2lMYu/YxXgbBtl+oKOhGQHa4RpvE68k8IzbWkABzHnyAIjR758A==,
+      }
+    engines: { node: ">=8.0.0" }
+
   html-url-attributes@3.0.1:
     resolution:
       {
@@ -1575,6 +1588,13 @@ packages:
         integrity: sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==,
       }
     hasBin: true
+
+  libheif-js@1.23.5:
+    resolution:
+      {
+        integrity: sha512-umXZPthnWZtF3iG/5mQG+AZ2V6i0UeYpo3z2CkggTEgL8dKmIIwJT6TDuAMuabXa1yTW8uJ1ZAgR+CxNTklYYw==,
+      }
+    engines: { node: ">=8.0.0" }
 
   lightningcss-android-arm64@1.32.0:
     resolution:
@@ -2640,8 +2660,7 @@ snapshots:
 
   "@floating-ui/utils@0.2.12": {}
 
-  "@img/colour@1.1.0":
-    optional: true
+  "@img/colour@1.1.0": {}
 
   "@img/sharp-darwin-arm64@0.35.5":
     optionalDependencies:
@@ -3216,6 +3235,10 @@ snapshots:
       property-information: 7.2.0
       space-separated-tokens: 2.0.2
 
+  heic-decode@2.1.0:
+    dependencies:
+      libheif-js: 1.23.5
+
   html-url-attributes@3.0.1: {}
 
   html-void-elements@3.0.0: {}
@@ -3246,6 +3269,8 @@ snapshots:
   katex@0.16.47:
     dependencies:
       commander: 8.3.0
+
+  libheif-js@1.23.5: {}
 
   lightningcss-android-arm64@1.32.0:
     optional: true
@@ -3867,8 +3892,7 @@ snapshots:
 
   scheduler@0.28.0: {}
 
-  semver@7.8.5:
-    optional: true
+  semver@7.8.5: {}
 
   sharp@0.35.5(@types/node@24.19.2):
     dependencies:
@@ -3902,7 +3926,6 @@ snapshots:
       "@img/sharp-win32-ia32": 0.35.5
       "@img/sharp-win32-x64": 0.35.5
       "@types/node": 24.19.2
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:

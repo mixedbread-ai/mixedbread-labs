@@ -18,6 +18,10 @@ const CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // The fonts the server draws Word and PowerPoint pages with
+  outputFileTracingIncludes: {
+    "/api/files/*/pages/*": ["./vendor/powerbottom/fonts/*"],
+  },
   // Clear of the sidebar's footer
   devIndicators: { position: "bottom-right" },
   experimental: {

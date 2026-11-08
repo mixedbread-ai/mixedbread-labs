@@ -1,18 +1,17 @@
 import { z } from "zod";
 import { cacheUntil } from "@/lib/api";
+import { PARSE_LIFETIME } from "@/lib/files";
 import { getMixedbreadClient } from "@/lib/mixedbread";
 
 // What the parse view draws. Anything else, an uploaded HTML page or SVG
 // among them, comes as a download, so it can't run script on this origin.
-// The API deletes a parse and its file a week after the upload
-const PARSE_LIFETIME = 7 * 24 * 60 * 60 * 1000;
-
 const INLINE = [
   "application/pdf",
   "image/png",
   "image/jpeg",
   "image/webp",
   "image/gif",
+  "image/avif",
 ];
 
 /**
