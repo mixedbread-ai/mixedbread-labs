@@ -146,6 +146,13 @@ export interface ChatFile {
   status: "pending" | "in_progress" | "cancelled" | "completed" | "failed";
 }
 
+/** A chat's name: its file, or its first and how many more */
+export function chatTitle(files: { filename: string }[]): string {
+  return files.length === 1
+    ? (files[0]?.filename ?? "")
+    : `${files[0]?.filename ?? "Files"} and ${files.length - 1} more`;
+}
+
 export function isIndexing(files: ChatFile[]): boolean {
   return files.some(
     ({ status }) => status === "pending" || status === "in_progress"

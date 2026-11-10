@@ -6,6 +6,8 @@ export interface HistoryEntry {
   href: string;
   title: string;
   detail: string;
+  /** Kept by the browser that made it, which alone can delete it */
+  token?: string;
 }
 
 // Checked by hand rather than with a schema library, which would ship on every page
@@ -16,7 +18,8 @@ function isEntry(value: unknown): value is HistoryEntry {
     (entry.kind === "parse" || entry.kind === "chat") &&
     typeof entry.href === "string" &&
     typeof entry.title === "string" &&
-    typeof entry.detail === "string"
+    typeof entry.detail === "string" &&
+    (entry.token === undefined || typeof entry.token === "string")
   );
 }
 
@@ -52,17 +55,7 @@ function subscribe(listener: () => void) {
   };
 }
 
-/**
- * Adds a new entry on top. One already listed keeps its place, so the list
- * doesn't move under the pointer that just opened it.
- */
-function remember(entry: HistoryEntry) {
-  const entries = read();
-  const known = entries.find(({ href }) => href === entry.href);
-  if (known?.title === entry.title && known.detail === entry.detail) return;
-  const next = known
-    ? entries.map((item) => (item === known ? entry : item))
-    : [entry, ...entries].slice(0, MAX_ENTRIES);
+function write(next: HistoryEntry[]) {
   cache = next;
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
@@ -70,6 +63,34 @@ function remember(entry: HistoryEntry) {
     // Private windows may refuse storage; the list then lasts the visit
   }
   for (const listener of listeners) listener();
+}
+
+/**
+ * Adds a new entry on top. One already listed keeps its place, so the list
+ * doesn't move under the pointer that just opened it, and its token.
+ */
+export function remember(entry: HistoryEntry) {
+  const entries = read();
+  const known = entries.find(({ href }) => href === entry.href);
+  const token = entry.token ?? known?.token;
+  if (
+    known?.title === entry.title &&
+    known.detail === entry.detail &&
+    known.token === token
+  ) {
+    return;
+  }
+  const next = { ...entry, token };
+  write(
+    known
+      ? entries.map((item) => (item === known ? next : item))
+      : [next, ...entries].slice(0, MAX_ENTRIES)
+  );
+}
+
+/** Takes an entry off the list, once what it links to is deleted */
+export function forget(href: string) {
+  write(read().filter((entry) => entry.href !== href));
 }
 
 /** Records this page in the history once its title is known */

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { ParsePending } from "@/components/parse/pending";
 import { PageHeader } from "@/components/shell/shell";
 import { Bone } from "@/components/skeleton";
-import { startedJob } from "@/lib/parse";
+import { startedJob } from "@/lib/start-parse";
 
 const LINES = ["w-full", "w-full", "w-11/12", "w-full", "w-2/3"];
 const PARAGRAPHS = 4;

@@ -4,11 +4,18 @@ import { apiError, badRequest, rejectBots } from "@/lib/api";
 import { DEFAULT_CHAT_OPTIONS } from "@/lib/chat";
 import { formatOf, MAX_CHAT_FILES } from "@/lib/files";
 import { getMixedbreadClient } from "@/lib/mixedbread";
+import { isOwner, ownerToken } from "@/lib/owner";
 import { MODES } from "@/lib/parse";
 
 const BodySchema = z.object({
   files: z
-    .array(z.object({ id: z.uuid(), filename: z.string().max(255) }))
+    .array(
+      z.object({
+        id: z.uuid(),
+        filename: z.string().max(255),
+        token: z.string().max(100).optional(),
+      })
+    )
     .min(1)
     .max(MAX_CHAT_FILES),
   options: z
@@ -64,7 +71,15 @@ export async function POST(req: Request) {
       await client.stores.delete(store.id).catch(() => undefined);
       throw error;
     }
-    return NextResponse.json({ id: store.id });
+    // Deleting a chat deletes its files, so only a chat of files this browser
+    // uploaded gets a token to delete it
+    const ownsFiles = files.every(({ id, token }) =>
+      isOwner("file", id, token)
+    );
+    return NextResponse.json({
+      id: store.id,
+      token: ownsFiles ? ownerToken("chat", store.id) : undefined,
+    });
   } catch (error) {
     return apiError(error);
   }

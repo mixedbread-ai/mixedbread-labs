@@ -8,7 +8,12 @@ import { HEADLINE, PICKER, POPUP, ToastMark } from "@/components/controls";
 import { Playground } from "@/components/playground";
 import { ShareButton } from "@/components/share-button";
 import { PageHeader } from "@/components/shell/shell";
-import { CHAT_MODEL_NAME, type ChatFile, isIndexing } from "@/lib/chat";
+import {
+  CHAT_MODEL_NAME,
+  type ChatFile,
+  chatTitle,
+  isIndexing,
+} from "@/lib/chat";
 import { useRemember } from "@/lib/history";
 import { request } from "@/lib/request";
 import { plural } from "@/lib/text";
@@ -34,10 +39,7 @@ export function ChatRoom({
   const [files, setFiles] = useState(initialFiles);
   const indexing = isIndexing(files);
   const ready = files.some(({ status }) => status === "completed");
-  const title =
-    files.length === 1
-      ? (files[0]?.filename ?? "")
-      : `${files[0]?.filename ?? "Files"} and ${files.length - 1} more`;
+  const title = chatTitle(files);
 
   useRemember({
     kind: "chat",

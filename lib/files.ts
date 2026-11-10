@@ -43,6 +43,8 @@ export const MAX_CHAT_FILES = 10;
 export interface UploadedFile {
   id: string;
   filename: string;
+  /** Proves this browser uploaded it, so what it makes from it can delete it */
+  token?: string;
 }
 
 export interface UploadStart {

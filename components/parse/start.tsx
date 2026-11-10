@@ -5,8 +5,9 @@ import { useState } from "react";
 import { DropCard, FileRow, StartLayout } from "@/components/drop-card";
 import { PageHeader } from "@/components/shell/shell";
 import { PARSE_ACCEPT, type UploadedFile } from "@/lib/files";
-import { DEFAULT_OPTIONS, type ParseOptions, startParse } from "@/lib/parse";
+import { DEFAULT_OPTIONS, type ParseOptions } from "@/lib/parse";
 import { errorMessage } from "@/lib/request";
+import { startParse } from "@/lib/start-parse";
 import { uploadFile } from "@/lib/upload";
 import { OptionsForm } from "./options";
 
@@ -30,7 +31,7 @@ export function ParseStart() {
           current?.file === file ? { ...current, progress } : current
         )
       );
-      router.push(await startParse(uploaded.id, options));
+      router.push(await startParse(uploaded.id, options, uploaded.token));
     } catch (reason) {
       const error = errorMessage(reason);
       setPicked((current) =>

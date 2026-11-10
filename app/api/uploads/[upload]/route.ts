@@ -3,6 +3,7 @@ import { z } from "zod";
 import { apiError, badRequest, rejectBots } from "@/lib/api";
 import type { UploadedFile } from "@/lib/files";
 import { getMixedbreadClient } from "@/lib/mixedbread";
+import { ownerToken } from "@/lib/owner";
 
 const BodySchema = z.object({
   parts: z
@@ -38,6 +39,7 @@ export async function POST(
     return NextResponse.json<UploadedFile>({
       id: file.id,
       filename: file.filename,
+      token: ownerToken("file", file.id),
     });
   } catch (error) {
     return apiError(error);

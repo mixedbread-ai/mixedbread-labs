@@ -43,6 +43,18 @@ export function apiError(error: unknown): NextResponse {
   );
 }
 
+/** Whether a call failed because what it names is gone, deleted here or elsewhere */
+export function isMissing(error: unknown): boolean {
+  return error instanceof APIError && error.status === 404;
+}
+
+/** A delete that counts as done when there was nothing left to delete */
+export async function deleted(call: Promise<unknown>): Promise<void> {
+  await call.catch((error: unknown) => {
+    if (!isMissing(error)) throw error;
+  });
+}
+
 /**
  * Lets browsers and the CDN keep a response until what it shows is deleted,
  * and no longer: a deleted or taken-down file stops being served with it

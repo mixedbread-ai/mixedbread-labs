@@ -26,9 +26,9 @@ import {
   type ParseMode,
   type ParseOptions,
   readResult,
-  startParse,
 } from "@/lib/parse";
 import { errorMessage } from "@/lib/request";
+import { startParse } from "@/lib/start-parse";
 import { plural } from "@/lib/text";
 import { uploadedFile } from "@/lib/upload";
 import type { PageKind, Selection } from "./document";

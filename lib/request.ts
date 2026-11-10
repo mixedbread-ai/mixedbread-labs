@@ -24,3 +24,6 @@ export function postJson<T>(url: string, body: object): Promise<T> {
 export function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
 }
+
+/** The header a delete carries its owner token in */
+export const OWNER_HEADER = "x-owner-token";

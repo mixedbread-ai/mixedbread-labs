@@ -6,9 +6,11 @@ import { useState } from "react";
 import { PRIMARY } from "@/components/controls";
 import { DropCard, FileRow, StartLayout } from "@/components/drop-card";
 import { PageHeader } from "@/components/shell/shell";
-import { type ChatOptions, DEFAULT_CHAT_OPTIONS } from "@/lib/chat";
+import { type ChatOptions, chatTitle, DEFAULT_CHAT_OPTIONS } from "@/lib/chat";
 import { CHAT_ACCEPT, MAX_CHAT_FILES, type UploadedFile } from "@/lib/files";
+import { remember } from "@/lib/history";
 import { errorMessage, postJson } from "@/lib/request";
+import { plural } from "@/lib/text";
 import { uploadFile } from "@/lib/upload";
 import { ChatOptionsForm } from "./options";
 
@@ -66,11 +68,22 @@ export function ChatStart() {
     setSubmitting(true);
     setError(undefined);
     try {
-      const chat = await postJson<{ id: string }>("/api/chats", {
-        files: uploaded,
-        options,
-      });
-      router.push(`/chat/${chat.id}`);
+      const chat = await postJson<{ id: string; token?: string }>(
+        "/api/chats",
+        { files: uploaded, options }
+      );
+      const href = `/chat/${chat.id}`;
+      // Listed now with the token that deletes it, named as the chat names it
+      if (chat.token) {
+        remember({
+          kind: "chat",
+          href,
+          title: chatTitle(uploaded),
+          detail: plural(uploaded.length, "file"),
+          token: chat.token,
+        });
+      }
+      router.push(href);
     } catch (reason) {
       setError(errorMessage(reason));
       setSubmitting(false);

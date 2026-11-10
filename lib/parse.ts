@@ -4,7 +4,6 @@ import type {
   ParsingJob,
   ReturnFormat,
 } from "@mixedbread/sdk/resources/parsing/jobs";
-import { postJson } from "./request";
 import { plainText } from "./text";
 
 export type ParseMode = "fast" | "high_quality";
@@ -189,25 +188,4 @@ function withoutMath(text: string): string {
     .replace(/\\[a-zA-Z]+\{([^{}]*)\}/g, "$1")
     .replace(/\\[a-zA-Z]+/g, "")
     .replace(/[$^_{}]/g, "");
-}
-
-// The jobs this tab started, so their page can show them queued while it
-// loads rather than a result that isn't there yet
-const started = new Map<string, ParsingJob>();
-
-export function startedJob(id: string): ParsingJob | undefined {
-  return started.get(id);
-}
-
-/** Starts parsing an uploaded file, resolving to the result's link */
-export async function startParse(
-  fileId: string,
-  options: ParseOptions
-): Promise<string> {
-  const job = await postJson<ParsingJob>("/api/parse", {
-    file_id: fileId,
-    ...options,
-  });
-  started.set(job.id, job);
-  return jobHref(job.id, options.mode);
 }

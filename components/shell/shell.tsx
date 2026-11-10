@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Drawer } from "@base-ui/react/drawer";
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
@@ -14,10 +15,11 @@ import {
   MoonIcon,
   PanelLeftIcon,
   SunIcon,
+  Trash2Icon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   type CSSProperties,
@@ -25,9 +27,10 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { FOCUS, GHOST_ICON } from "@/components/controls";
+import { BUTTON, FOCUS, GHOST_ICON, POPUP } from "@/components/controls";
 import { HoverArea } from "@/components/ui/hover-area";
-import { type HistoryEntry, useHistory } from "@/lib/history";
+import { forget, type HistoryEntry, useHistory } from "@/lib/history";
+import { errorMessage, OWNER_HEADER, request } from "@/lib/request";
 
 const drawer = Drawer.createHandle();
 
@@ -70,6 +73,13 @@ function SidebarContent() {
   const pathname = usePathname();
   const parses = useHistory("parse");
   const chats = useHistory("chat");
+  // The entry the dialog asks about stays while it closes
+  const [deleting, setDeleting] = useState<HistoryEntry>();
+  const [confirming, setConfirming] = useState(false);
+  const onDelete = (entry: HistoryEntry) => {
+    setDeleting(entry);
+    setConfirming(true);
+  };
 
   return (
     <>
@@ -101,8 +111,18 @@ function SidebarContent() {
       </nav>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-4">
-        <History label="Parses" entries={parses} pathname={pathname} />
-        <History label="Chats" entries={chats} pathname={pathname} />
+        <History
+          label="Parses"
+          entries={parses}
+          pathname={pathname}
+          onDelete={onDelete}
+        />
+        <History
+          label="Chats"
+          entries={chats}
+          pathname={pathname}
+          onDelete={onDelete}
+        />
         {parses.length + chats.length === 0 && (
           <p className="px-2 pt-4 text-xs leading-5 text-muted-foreground/80">
             Parses and chats you open show here, in this browser.
@@ -124,6 +144,12 @@ function SidebarContent() {
         </a>
         <ThemeSwitch />
       </div>
+
+      <DeleteDialog
+        entry={deleting}
+        open={confirming}
+        onOpenChange={setConfirming}
+      />
     </>
   );
 }
@@ -157,10 +183,12 @@ function History({
   label,
   entries,
   pathname,
+  onDelete,
 }: {
   label: string;
   entries: HistoryEntry[];
   pathname: string;
+  onDelete: (entry: HistoryEntry) => void;
 }) {
   if (entries.length === 0) return null;
 
@@ -172,7 +200,7 @@ function History({
       <HoverArea>
         <ul className="flex flex-col gap-px">
           {entries.map((entry) => (
-            <li key={entry.href} data-row="" className="relative">
+            <li key={entry.href} data-row="" className="group/row relative">
               <Link
                 href={entry.href}
                 title={`${entry.title}\n${entry.detail}`}
@@ -186,11 +214,128 @@ function History({
                   {entry.title}
                 </span>
               </Link>
+              {/* Only the browser that made it holds the token to delete it */}
+              {entry.token && (
+                <button
+                  type="button"
+                  aria-label={`Delete ${entry.title}`}
+                  onClick={() => onDelete(entry)}
+                  className={cn(
+                    "absolute top-1/2 right-1 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-0 transition-[opacity,color,background-color] duration-150 group-hover/row:opacity-100 hover:bg-soft hover:text-foreground focus-visible:opacity-100 [@media(hover:none)]:opacity-100",
+                    FOCUS
+                  )}
+                >
+                  <Trash2Icon className="size-3.5" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
       </HoverArea>
     </section>
+  );
+}
+
+/** Where a delete goes: the API route behind the entry's page */
+function apiPathOf({ kind, href }: HistoryEntry): string {
+  const id = href.split("?")[0]?.split("/").pop() ?? "";
+  return kind === "chat" ? `/api/chats/${id}` : `/api/parse/${id}`;
+}
+
+/**
+ * Asks before deleting a chat or parse, as it goes for everyone with the
+ * link; then leaves its page if it was open
+ */
+function DeleteDialog({
+  entry,
+  open,
+  onOpenChange,
+}: {
+  entry: HistoryEntry | undefined;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string>();
+  const noun = entry?.kind === "chat" ? "chat" : "parse";
+
+  async function confirm() {
+    if (!entry?.token) return;
+    setPending(true);
+    setError(undefined);
+    try {
+      await request(apiPathOf(entry), {
+        method: "DELETE",
+        headers: { [OWNER_HEADER]: entry.token },
+      });
+      forget(entry.href);
+      onOpenChange(false);
+      if (pathname === entry.href.split("?")[0]) {
+        drawer.close();
+        router.push(entry.kind === "chat" ? "/chat" : "/parse");
+      }
+    } catch (reason) {
+      setError(errorMessage(reason));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <AlertDialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (pending) return;
+        if (next) setError(undefined);
+        onOpenChange(next);
+      }}
+    >
+      <AlertDialog.Portal>
+        <AlertDialog.Backdrop className="fixed inset-0 z-50 bg-black/25 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none dark:bg-black/55" />
+        <AlertDialog.Popup
+          className={cn(
+            POPUP,
+            "fixed top-1/2 left-1/2 z-50 flex w-[min(22rem,calc(100vw-2rem))] -translate-1/2 flex-col gap-4 rounded-2xl p-5"
+          )}
+        >
+          <div className="flex flex-col gap-1.5">
+            <AlertDialog.Title className="text-[15px] font-medium">
+              Delete this {noun}?
+            </AlertDialog.Title>
+            <AlertDialog.Description className="text-[13px] leading-5 text-muted-foreground">
+              <span className="font-medium break-words text-foreground">
+                {entry?.title}
+              </span>{" "}
+              stops working for everyone with the link. This can&apos;t be
+              undone.
+            </AlertDialog.Description>
+          </div>
+          {error && (
+            <p className="text-[13px] text-destructive motion-safe:animate-swap-in">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <AlertDialog.Close disabled={pending} className={BUTTON}>
+              Cancel
+            </AlertDialog.Close>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void confirm()}
+              className={cn(
+                BUTTON,
+                "bg-destructive text-white ring-0 hover:bg-destructive/90"
+              )}
+            >
+              {pending ? "Deleting…" : "Delete"}
+            </button>
+          </div>
+        </AlertDialog.Popup>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
   );
 }
 
