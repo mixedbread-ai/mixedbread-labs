@@ -1,4 +1,5 @@
 import type { UIMessage } from "ai";
+import type { ParseMode } from "./parse";
 
 /** Chat's agent, through the Vercel AI Gateway */
 export const CHAT_MODEL = "openai/gpt-5.6-terra";
@@ -127,6 +128,16 @@ export function pageLabel({
 }: Pick<DocPage, "file" | "page">): string {
   return page ? `${file} · p. ${page}` : file;
 }
+
+/** How a chat's store reads its files */
+export interface ChatOptions {
+  /** High quality makes a passage of each page, with its image and layout */
+  mode: ParseMode;
+}
+
+export const DEFAULT_CHAT_OPTIONS: ChatOptions = {
+  mode: "high_quality",
+};
 
 /** A file of a chat, and how far indexing it has got */
 export interface ChatFile {

@@ -6,9 +6,11 @@ import { useState } from "react";
 import { PRIMARY } from "@/components/controls";
 import { DropCard, FileRow, StartLayout } from "@/components/drop-card";
 import { PageHeader } from "@/components/shell/shell";
+import { type ChatOptions, DEFAULT_CHAT_OPTIONS } from "@/lib/chat";
 import { CHAT_ACCEPT, MAX_CHAT_FILES, type UploadedFile } from "@/lib/files";
 import { errorMessage, postJson } from "@/lib/request";
 import { uploadFile } from "@/lib/upload";
+import { ChatOptionsForm } from "./options";
 
 interface Picked {
   key: string;
@@ -24,6 +26,7 @@ export function ChatStart() {
   const [picked, setPicked] = useState<Picked[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
+  const [options, setOptions] = useState<ChatOptions>(DEFAULT_CHAT_OPTIONS);
 
   function update(key: string, change: Partial<Picked>) {
     setPicked((current) =>
@@ -65,6 +68,7 @@ export function ChatStart() {
     try {
       const chat = await postJson<{ id: string }>("/api/chats", {
         files: uploaded,
+        options,
       });
       router.push(`/chat/${chat.id}`);
     } catch (reason) {
@@ -83,6 +87,13 @@ export function ChatStart() {
           hint={`Up to ${MAX_CHAT_FILES} documents, images or text files`}
           disabled={submitting || picked.length >= MAX_CHAT_FILES}
           onFiles={pick}
+          footer={
+            <ChatOptionsForm
+              options={options}
+              onChange={setOptions}
+              disabled={submitting}
+            />
+          }
         >
           {picked.length > 0 &&
             picked.map((item) => (

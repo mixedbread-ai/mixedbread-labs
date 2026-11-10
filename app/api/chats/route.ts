@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError, badRequest, rejectBots } from "@/lib/api";
-import { MAX_CHAT_FILES } from "@/lib/files";
+import { DEFAULT_CHAT_OPTIONS } from "@/lib/chat";
+import { formatOf, MAX_CHAT_FILES } from "@/lib/files";
 import { getMixedbreadClient } from "@/lib/mixedbread";
+import { MODES } from "@/lib/parse";
 
 const BodySchema = z.object({
   files: z
     .array(z.object({ id: z.uuid(), filename: z.string().max(255) }))
     .min(1)
     .max(MAX_CHAT_FILES),
+  options: z
+    .object({
+      mode: z.enum(MODES.map(({ value }) => value)),
+    })
+    .default(DEFAULT_CHAT_OPTIONS),
 });
 
 /** How long a chat lasts once nobody uses it */
@@ -25,19 +32,38 @@ export async function POST(req: Request) {
   const body = BodySchema.safeParse(await req.json());
   if (!body.success) return badRequest("Pick up to 10 files.");
 
-  const { files } = body.data;
+  const { files, options } = body.data;
+  const client = getMixedbreadClient();
   try {
-    const store = await getMixedbreadClient().stores.create(
+    const store = await client.stores.create(
       {
         // The API takes a store without a name but can't save one: it answers
         // 500. Names are unique in the organization, so each chat gets its own.
         name: `chat-${crypto.randomUUID()}`,
         description: files.map(({ filename }) => filename).join(", "),
         expires_after: { anchor: "last_active_at", days: EXPIRES_AFTER_DAYS },
-        file_ids: files.map(({ id }) => id),
       },
       { query: { _encoder: STORE_ENCODER } }
     );
+    // Files given to `stores.create` are parsed fast, as text alone, so each
+    // is added with the mode picked. High quality makes a chunk of each page,
+    // with its image and the layout that search and citations box; text files
+    // have no pages, so they always go fast.
+    try {
+      await Promise.all(
+        files.map(({ id, filename }) =>
+          client.stores.files.create(store.id, {
+            file_id: id,
+            config: {
+              parsing_strategy: formatOf(filename) ? options.mode : "fast",
+            },
+          })
+        )
+      );
+    } catch (error) {
+      await client.stores.delete(store.id).catch(() => undefined);
+      throw error;
+    }
     return NextResponse.json({ id: store.id });
   } catch (error) {
     return apiError(error);
