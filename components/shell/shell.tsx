@@ -28,6 +28,7 @@ import { useTheme } from "next-themes";
 import {
   type CSSProperties,
   type ReactNode,
+  useEffect,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -41,7 +42,14 @@ import {
 import { HoverArea } from "@/components/ui/hover-area";
 import { IconSwap } from "@/components/ui/icon-swap";
 import { useCopy } from "@/lib/clipboard";
-import { forget, type HistoryEntry, useHistory } from "@/lib/history";
+import {
+  dropGone,
+  forget,
+  type HistoryEntry,
+  idOf,
+  pageOf,
+  useHistory,
+} from "@/lib/history";
 import { errorMessage, OWNER_HEADER, request } from "@/lib/request";
 
 const drawer = Drawer.createHandle();
@@ -85,6 +93,10 @@ function SidebarContent() {
   const pathname = usePathname();
   const parses = useHistory("parse");
   const chats = useHistory("chat");
+  // Rows whose parse or chat is gone leave once the server says so
+  useEffect(() => {
+    void dropGone();
+  }, []);
   // The entry the dialog asks about stays while it closes
   const [deleting, setDeleting] = useState<HistoryEntry>();
   const [confirming, setConfirming] = useState(false);
@@ -225,7 +237,7 @@ function History({
                 title={`${entry.title}\n${entry.detail}`}
                 onClick={() => drawer.close()}
                 aria-current={
-                  pathname === entry.href.split("?")[0] ? "page" : undefined
+                  pathname === pageOf(entry.href) ? "page" : undefined
                 }
                 className={cn(ROW, "text-foreground/70")}
               >
@@ -318,7 +330,7 @@ function RowMenu({
 
 /** Where a delete goes: the API route behind the entry's page */
 function apiPathOf({ kind, href }: HistoryEntry): string {
-  const id = href.split("?")[0]?.split("/").pop() ?? "";
+  const id = idOf(href);
   return kind === "chat" ? `/api/chats/${id}` : `/api/parse/${id}`;
 }
 
@@ -352,7 +364,7 @@ function DeleteDialog({
       });
       forget(entry.href);
       onOpenChange(false);
-      if (pathname === entry.href.split("?")[0]) {
+      if (pathname === pageOf(entry.href)) {
         drawer.close();
         router.push(entry.kind === "chat" ? "/chat" : "/parse");
       }

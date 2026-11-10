@@ -4,6 +4,7 @@ import { cache } from "react";
 import { z } from "zod";
 import { ParsePending } from "@/components/parse/pending";
 import { ParseView } from "@/components/parse/view";
+import { isMissing } from "@/lib/api";
 import { getMixedbreadClient } from "@/lib/mixedbread";
 import { isRunning, MODES } from "@/lib/parse";
 
@@ -12,11 +13,16 @@ interface Props {
   searchParams: Promise<{ mode?: string }>;
 }
 
+// Gone only when the API says so: any other failure, such as an outage,
+// shows as an error, so the sidebar keeps a parse that's still there
 const loadJob = cache(async (id: string) => {
   if (!z.uuid().safeParse(id).success) return null;
   return getMixedbreadClient()
     .parsing.jobs.retrieve(id)
-    .catch(() => null);
+    .catch((error: unknown) => {
+      if (isMissing(error)) return null;
+      throw error;
+    });
 });
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
