@@ -421,7 +421,7 @@ function CopyButton({ text, label }: { text: () => string; label?: string }) {
   return (
     <button
       type="button"
-      onClick={() => copy(text())}
+      onClick={() => void copy(text()).catch(() => {})}
       className={label ? GHOST : cn(GHOST_ICON, "size-7")}
     >
       <IconSwap

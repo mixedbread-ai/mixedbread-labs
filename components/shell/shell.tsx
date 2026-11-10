@@ -2,13 +2,17 @@
 
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Drawer } from "@base-ui/react/drawer";
+import { Menu } from "@base-ui/react/menu";
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { cn } from "cn";
 import {
   ArrowUpRightIcon,
   BookOpenIcon,
+  CheckIcon,
+  EllipsisIcon,
   FileSearchIcon,
+  LinkIcon,
   type LucideIcon,
   MessageCirclePlusIcon,
   MonitorIcon,
@@ -27,8 +31,16 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { BUTTON, FOCUS, GHOST_ICON, POPUP } from "@/components/controls";
+import {
+  BUTTON,
+  FOCUS,
+  GHOST_ICON,
+  POPUP,
+  POPUP_ITEM,
+} from "@/components/controls";
 import { HoverArea } from "@/components/ui/hover-area";
+import { IconSwap } from "@/components/ui/icon-swap";
+import { useCopy } from "@/lib/clipboard";
 import { forget, type HistoryEntry, useHistory } from "@/lib/history";
 import { errorMessage, OWNER_HEADER, request } from "@/lib/request";
 
@@ -200,7 +212,14 @@ function History({
       <HoverArea>
         <ul className="flex flex-col gap-px">
           {entries.map((entry) => (
-            <li key={entry.href} data-row="" className="group/row relative">
+            // The button shows on hover, keyboard focus, an open menu, or a
+            // touch screen; --row-clear moves the title's fade out of its way.
+            // An open menu keeps its row lit, as the pointer leaves for it.
+            <li
+              key={entry.href}
+              data-row=""
+              className="group/row relative rounded-lg transition-[--row-clear,background-color] duration-200 ease-smooth hover:[--row-clear:1.5rem] has-focus-visible:[--row-clear:1.5rem] has-data-popup-open:[--row-clear:1.5rem] has-data-popup-open:not-hover:bg-[oklch(from_var(--foreground)_l_c_h/0.055)] motion-reduce:transition-none [@media(hover:none)]:[--row-clear:1.5rem]"
+            >
               <Link
                 href={entry.href}
                 title={`${entry.title}\n${entry.detail}`}
@@ -210,29 +229,90 @@ function History({
                 }
                 className={cn(ROW, "text-foreground/70")}
               >
-                <span className="min-w-0 flex-1 overflow-hidden mask-r-from-[calc(100%-1.5rem)] whitespace-nowrap">
+                {/* Fades out before the menu button wherever it shows */}
+                <span className="min-w-0 flex-1 overflow-hidden row-fade whitespace-nowrap">
                   {entry.title}
                 </span>
               </Link>
-              {/* Only the browser that made it holds the token to delete it */}
-              {entry.token && (
-                <button
-                  type="button"
-                  aria-label={`Delete ${entry.title}`}
-                  onClick={() => onDelete(entry)}
-                  className={cn(
-                    "absolute top-1/2 right-1 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-0 transition-[opacity,color,background-color] duration-150 group-hover/row:opacity-100 hover:bg-soft hover:text-foreground focus-visible:opacity-100 [@media(hover:none)]:opacity-100",
-                    FOCUS
-                  )}
-                >
-                  <Trash2Icon className="size-3.5" />
-                </button>
-              )}
+              <RowMenu entry={entry} onDelete={onDelete} />
             </li>
           ))}
         </ul>
       </HoverArea>
     </section>
+  );
+}
+
+/**
+ * A row's menu: its link to copy, so it can be shared without opening it,
+ * and, for the browser that made it, delete
+ */
+function RowMenu({
+  entry,
+  onDelete,
+}: {
+  entry: HistoryEntry;
+  onDelete: (entry: HistoryEntry) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [copied, copy] = useCopy();
+
+  return (
+    <Menu.Root open={open} onOpenChange={setOpen}>
+      <Menu.Trigger
+        aria-label={`More for ${entry.title}`}
+        className={cn(
+          // Slides in with the title's fade, on the same curve; keyboard focus
+          // shows it, focus handed back by a closed menu doesn't
+          "absolute top-1/2 right-1 flex size-6 translate-x-1 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-0 transition-[opacity,translate,color,background-color] duration-200 ease-smooth group-hover/row:translate-x-0 group-hover/row:opacity-100 group-has-focus-visible/row:translate-x-0 group-has-focus-visible/row:opacity-100 hover:bg-soft hover:text-foreground data-popup-open:translate-x-0 data-popup-open:bg-soft data-popup-open:text-foreground data-popup-open:opacity-100 motion-reduce:transition-none [@media(hover:none)]:translate-x-0 [@media(hover:none)]:opacity-100",
+          FOCUS
+        )}
+      >
+        <EllipsisIcon className="size-4" />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner
+          side="bottom"
+          align="end"
+          sideOffset={4}
+          className="z-50"
+        >
+          <Menu.Popup className={cn(POPUP, "w-44")}>
+            {/* Stays open a moment to show the link was copied */}
+            <Menu.Item
+              closeOnClick={false}
+              onClick={() =>
+                copy(new URL(entry.href, location.origin).href).then(
+                  () => setTimeout(() => setOpen(false), 700),
+                  () => {}
+                )
+              }
+              className={POPUP_ITEM}
+            >
+              <IconSwap
+                state={copied ? "b" : "a"}
+                a={<LinkIcon className="size-4 text-muted-foreground" />}
+                b={<CheckIcon className="size-4 text-muted-foreground" />}
+              />
+              {copied ? "Copied" : "Copy link"}
+            </Menu.Item>
+            {/* Only the browser that made it holds the token to delete it */}
+            {entry.token && (
+              <Menu.Item
+                onClick={() => onDelete(entry)}
+                className={cn(
+                  POPUP_ITEM,
+                  "text-destructive data-highlighted:bg-destructive/10 data-highlighted:text-destructive"
+                )}
+              >
+                <Trash2Icon className="size-4" />
+                Delete
+              </Menu.Item>
+            )}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 

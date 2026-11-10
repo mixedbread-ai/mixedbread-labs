@@ -13,7 +13,7 @@ export function ShareButton() {
   return (
     <button
       type="button"
-      onClick={() => copy(location.href)}
+      onClick={() => void copy(location.href).catch(() => {})}
       // Only the icon on phones, where the header has room for little else
       className={cn(BUTTON, "max-sm:w-8 max-sm:px-0")}
     >
