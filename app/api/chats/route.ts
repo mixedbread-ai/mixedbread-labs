@@ -28,8 +28,8 @@ const BodySchema = z.object({
 /** How long a chat lasts once nobody uses it */
 const EXPIRES_AFTER_DAYS = 30;
 
-/** The API still creates stores on V3 unless asked */
-const STORE_ENCODER = "mixedbread-ai/mxbai-wholembed-v4";
+/** Named so chats stay on V3 whatever the API creates stores on by default */
+const STORE_ENCODER = "mixedbread-ai/mxbai-wholembed-v3";
 
 /** Makes a chat: a store that indexes the uploaded files */
 export async function POST(req: Request) {
