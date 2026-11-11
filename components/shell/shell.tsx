@@ -125,11 +125,11 @@ function SidebarContent() {
 
       <nav aria-label="Tools" className="px-2 pb-1">
         <HoverArea className="flex flex-col gap-px">
-          <NavRow href="/parse" Icon={FileSearchIcon} pathname={pathname}>
-            Parse a document
-          </NavRow>
           <NavRow href="/chat" Icon={MessageCirclePlusIcon} pathname={pathname}>
             New chat
+          </NavRow>
+          <NavRow href="/parse" Icon={FileSearchIcon} pathname={pathname}>
+            Parse a document
           </NavRow>
         </HoverArea>
       </nav>
